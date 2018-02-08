@@ -1,0 +1,6 @@
+dataclasses
+gevent
+msgpack
+kombu
+amqp
+grpcio

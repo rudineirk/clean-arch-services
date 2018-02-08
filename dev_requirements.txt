@@ -1,0 +1,9 @@
+grpcio-tools
+yapf
+pylint
+jedi
+isort
+pytest
+pytest-watch
+pytest-cov
+pytest-mocha
