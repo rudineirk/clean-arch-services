@@ -1,7 +1,7 @@
-from usersvc.entities import User
+from usersvc.entities import Role, User
 
 
-def user_asdict(user: User) -> dict:
+def user_asjson(user: User) -> dict:
     return {
         'id': user.id,
         'username': user.username,
@@ -11,11 +11,9 @@ def user_asdict(user: User) -> dict:
     }
 
 
-def user_fromdict(data: dict) -> User:
-    return User(
-        username=data.get('username'),
-        email=data.get('email'),
-        fullname=data.get('fullname'),
-        password=data.get('password'),
-        roles=data.get('roles'),
-    )
+def role_asjson(role: Role) -> dict:
+    return {
+        'id': role.id,
+        'name': role.name,
+        'permissions': role.permissions,
+    }
