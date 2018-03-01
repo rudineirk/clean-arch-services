@@ -9,9 +9,9 @@ from .adapters import user_asbson, user_frombson
 
 
 class UsersRepoMongo(UsersRepo):
-    def __init__(self, client: MongoClient, roles_repo: RolesRepo):
+    def __init__(self, client: MongoClient):
         self.coll = client.auth.roles
-        self.roles_repo = roles_repo
+        self.roles_repo: RolesRepo = None
 
     def _get_roles(self) -> List[Role]:
         return self.roles_repo.get_roles()
