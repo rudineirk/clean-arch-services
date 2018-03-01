@@ -6,9 +6,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Role:
-    id: int = -1
     name: str
     permissions: List[str]
+    id: int = -1
 
 
 class RolesRepo(ABC):

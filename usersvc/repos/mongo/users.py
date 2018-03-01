@@ -14,7 +14,7 @@ class UsersRepoMongo(UsersRepo):
         self.roles_repo: RolesRepo = None
 
     def _get_roles(self) -> List[Role]:
-        return self.roles_repo.get_roles()
+        return self.roles_repo.get_all_roles()
 
     def get_user_by_id(self, uid: int) -> User:
         data = self.coll.find_one({'_id': uid})
@@ -25,7 +25,7 @@ class UsersRepoMongo(UsersRepo):
         return user_frombson(data, roles)
 
     def get_user_by_name(self, name: str) -> User:
-        data = self.coll.find_one({'name': name})
+        data = self.coll.find_one({'username': name})
         if data is None:
             return None
 

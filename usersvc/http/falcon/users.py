@@ -1,6 +1,6 @@
 import json
-from http import HTTPStatus
 
+import falcon
 from falcon import API, Request, Response
 
 from usersvc.entities import User
@@ -13,6 +13,10 @@ from usersvc.use_case.user import (
 )
 
 from .adapters import user_asjson
+
+HTTP_OK = falcon.HTTP_200
+HTTP_NOT_FOUND = falcon.HTTP_404
+HTTP_CONFLICT = falcon.HTTP_409
 
 
 class UserListApi:
@@ -37,10 +41,11 @@ class UserListApi:
             fullname=data.get('fullname'),
             email=data.get('email'),
             password=data.get('password'),
+            roles=data.get('roles'),
         )
         user = self.ucs.create_user(req)
         if not isinstance(user, User):
-            resp.status = HTTPStatus.CONFLICT
+            resp.status = HTTP_CONFLICT
             resp.body = 'Duplicated data'
             return
 
@@ -54,13 +59,13 @@ class UserApi:
         self.ucs = ucs
 
     def register(self):
-        self.app.add_route('/api/users/{id}', self)
+        self.app.add_route('/api/users/{uid}', self)
 
     def on_get(self, req: Request, resp: Response, uid: str):
         req = GetUserByIdRequest(id=int(uid))
         user = self.ucs.get_user_by_id(req)
         if not user:
-            resp.status = HTTPStatus.NOT_FOUND
+            resp.status = HTTP_NOT_FOUND
             return
 
         resp.context_type = 'application/json'
@@ -73,10 +78,11 @@ class UserApi:
             fullname=data.get('fullname'),
             email=data.get('email'),
             password=data.get('password'),
+            roles=data.get('roles'),
         )
         user = self.ucs.create_user(req)
         if not isinstance(user, User):
-            resp.status = HTTPStatus.CONFLICT
+            resp.status = HTTP_CONFLICT
             resp.body = 'Duplicated data'
             return
 
@@ -87,5 +93,5 @@ class UserApi:
         req = DeleteUserRequest(id=int(uid))
         user = self.ucs.delete_user(req)
         if not user:
-            resp.status = HTTPStatus.NOT_FOUND
+            resp.status = HTTP_NOT_FOUND
             return

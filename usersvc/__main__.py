@@ -9,7 +9,7 @@ from .use_case.auth import AuthUseCases
 from .use_case.user import UserUseCases
 
 
-def main():
+def create_app():
     client = MongoClient()
     roles_repo = RolesRepoMongo(client)
     users_repo = UsersRepoMongo(client)
@@ -26,9 +26,13 @@ def main():
     user_list_api = UserListApi(app, user_ucs)
     user_list_api.register()
 
+    return app
+
+
+def main(app):
     with make_server('', 3000, app) as httpd:
         httpd.serve_forever()
 
 
 if __name__ == '__main__':
-    main()
+    main(create_app())

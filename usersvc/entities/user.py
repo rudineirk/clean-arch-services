@@ -8,12 +8,12 @@ from .role import Role
 
 @dataclass
 class User:
-    id: int = -1
     username: str
     fullname: str
     email: str
     password: str
     roles: List[Role]
+    id: int = -1
 
     @property
     def permissions(self) -> List[str]:

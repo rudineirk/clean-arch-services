@@ -4,12 +4,17 @@ from usersvc.entities import Role, User
 
 
 def user_asbson(user: User) -> dict:
-    return {
+
+    data = {
         'username': user.username,
         'email': user.email,
         'fullname': user.fullname,
         'roles': [role.id for role in user.roles],
     }
+    if user.password:
+        data['password'] = user.password
+
+    return data
 
 
 def user_frombson(data: dict, roles: List[Role]) -> User:

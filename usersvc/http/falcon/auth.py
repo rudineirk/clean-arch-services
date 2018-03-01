@@ -1,9 +1,11 @@
 import json
-from http import HTTPStatus
 
+import falcon
 from falcon import API, Request, Response
 
 from usersvc.use_case.auth import AuthUseCases, UserLoginRequest
+
+HTTP_NOT_FOUND = falcon.HTTP_404
 
 
 class AuthApi:
@@ -22,7 +24,7 @@ class AuthApi:
         )
         token = self.ucs.user_login(req)
         if not token:
-            resp.status = HTTPStatus.NOT_FOUND
+            resp.status = HTTP_NOT_FOUND
             resp.body = 'Username or password incorrect'
             return
 
