@@ -7,8 +7,12 @@ from usersvc.use_case.auth import AuthUseCases, UserLoginRequest
 
 
 class AuthApi:
-    def __init__(self, ucs: AuthUseCases):
+    def __init__(self, app: API, ucs: AuthUseCases):
+        self.app = app
         self.ucs = ucs
+
+    def register(self):
+        self.app.add_route('/api/login', self)
 
     def on_post(self, req: Request, resp: Response):
         data = json.load(req.bounded_stream)
@@ -26,7 +30,3 @@ class AuthApi:
         resp.body = json.dumps({
             'token': token.token,
         })
-
-
-def register(app: API, auth: AuthApi):
-    app.add_route('/api/login', auth)

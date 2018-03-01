@@ -16,8 +16,12 @@ from .adapters import user_asjson
 
 
 class UserListApi:
-    def __init__(self, ucs: UserUseCases):
+    def __init__(self, app: API, ucs: UserUseCases):
+        self.app = app
         self.ucs = ucs
+
+    def register(self):
+        self.app.add_route('/api/users', self)
 
     def on_get(self, _, resp: Response):
         users = self.ucs.get_all_users()
@@ -45,8 +49,12 @@ class UserListApi:
 
 
 class UserApi:
-    def __init__(self, ucs: UserUseCases):
+    def __init__(self, app: API, ucs: UserUseCases):
+        self.app = app
         self.ucs = ucs
+
+    def register(self):
+        self.app.add_route('/api/users/{id}', self)
 
     def on_get(self, req: Request, resp: Response, uid: str):
         req = GetUserByIdRequest(id=int(uid))
@@ -81,8 +89,3 @@ class UserApi:
         if not user:
             resp.status = HTTPStatus.NOT_FOUND
             return
-
-
-def register(app: API, user_list: UserListApi, user: UserApi):
-    app.add_route('/api/users', user_list)
-    app.add_route('/api/users/{id}', user)
