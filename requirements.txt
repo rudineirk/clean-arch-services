@@ -3,7 +3,5 @@ gevent
 msgpack
 kombu
 amqp
-grpcio
 falcon
-
 pymongo

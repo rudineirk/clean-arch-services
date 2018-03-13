@@ -1,6 +1,5 @@
-grpcio-tools
 yapf
-pylint
+flake8
 jedi
 isort
 pytest
