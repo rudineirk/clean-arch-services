@@ -1,5 +1,3 @@
-from wsgiref.simple_server import make_server
-
 from pymongo import MongoClient
 
 from utils.http.backends.falcon import FalconApp
