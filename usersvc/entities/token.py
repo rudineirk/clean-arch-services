@@ -8,5 +8,4 @@ class Token:
     token: str
     owner: str
     version: int
-    ns: str  # namespace
     permissions: List[str]
