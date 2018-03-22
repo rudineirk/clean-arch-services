@@ -1,7 +1,6 @@
 dataclasses
 gevent
 msgpack
-kombu
-amqp
+pika
 falcon
 pymongo
