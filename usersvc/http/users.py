@@ -1,7 +1,7 @@
 from http import HTTPStatus as http_status
 
 from usersvc.entities import User
-from usersvc.use_case.user import (
+from usersvc.use_cases.user import (
     CreateUserRequest,
     DeleteUserRequest,
     GetUserByIdRequest,

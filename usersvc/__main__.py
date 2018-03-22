@@ -6,8 +6,8 @@ from utils.http.backends.falcon import FalconApp
 
 from .http import AuthApi, UserApi, UserListApi
 from .repos.mongo import RolesRepoMongo, UsersRepoMongo
-from .use_case.auth import AuthUseCases
-from .use_case.user import UserUseCases
+from .use_cases.auth import AuthUseCases
+from .use_cases.user import UserUseCases
 
 
 def create_app():

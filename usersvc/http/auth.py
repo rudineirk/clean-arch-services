@@ -1,6 +1,6 @@
 from http import HTTPStatus as http_status
 
-from usersvc.use_case.auth import AuthUseCases, UserLoginRequest
+from usersvc.use_cases.auth import AuthUseCases, UserLoginRequest
 from utils.http import Api, Request, Response, json_response
 
 
