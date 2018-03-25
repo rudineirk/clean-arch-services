@@ -41,7 +41,7 @@ class RolesRepoMongo(RolesRepo):
             {
                 '_id': role.id
             },
-            role_asbson(role),
+            {'$set': role_asbson(role)},
         )
         return data.matched_count >= 1
 

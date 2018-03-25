@@ -9,9 +9,9 @@ from .adapters import user_asbson, user_frombson
 
 
 class UsersRepoMongo(UsersRepo):
-    def __init__(self, client: MongoClient):
-        self.coll = client.auth.roles
-        self.roles_repo: RolesRepo = None
+    def __init__(self, client: MongoClient, roles_repo: RolesRepo):
+        self.coll = client.auth.users
+        self.roles_repo = roles_repo
 
     def _get_roles(self) -> List[Role]:
         return self.roles_repo.get_all_roles()
@@ -48,7 +48,7 @@ class UsersRepoMongo(UsersRepo):
             {
                 '_id': user.id
             },
-            user_asbson(user),
+            {'$set': user_asbson(user)},
         )
         return data.matched_count >= 1
 

@@ -11,8 +11,7 @@ from .use_cases.user import UserUseCases
 def create_app():
     client = MongoClient()
     roles_repo = RolesRepoMongo(client)
-    users_repo = UsersRepoMongo(client)
-    users_repo.roles_repo = roles_repo
+    users_repo = UsersRepoMongo(client, roles_repo)
 
     user_ucs = UserUseCases(users_repo, roles_repo)
     auth_ucs = AuthUseCases(users_repo)
