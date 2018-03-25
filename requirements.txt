@@ -4,3 +4,4 @@ msgpack
 pika
 falcon
 pymongo
+ujson

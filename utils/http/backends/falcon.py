@@ -36,11 +36,17 @@ class FalconApp:
             api = ApiMethods(methods)
             self.falcon.add_route(url, api)
 
+        return self
+
     def __call__(self, *args, **kwargs):
         '''WSGI interface'''
         return self.falcon(*args, **kwargs)
 
     def run(self, host='', port=3000):
+        print('Starting server at http://{}:{}/'.format(
+            host if host else '0.0.0.0',
+            port,
+        ))
         with make_server(host, port, self.falcon) as httpd:
             httpd.serve_forever()
 
@@ -63,7 +69,7 @@ class ApiMethods:
 
     def set_method(self, method, func):
         @wraps(func)
-        def wrapper(req: FalconRequest, resp: FalconResponse, *args):
+        def wrapper(req: FalconRequest, resp: FalconResponse, *args, **kwargs):
             wrapper_req = Request(
                 path=req.path,
                 method=req.method,
@@ -72,7 +78,7 @@ class ApiMethods:
                 query=req.params,
                 remote_addr=req.remote_addr,
             )
-            wrapper_resp: Response = func(wrapper_req, *args)
+            wrapper_resp: Response = func(wrapper_req, *args, **kwargs)
             resp.data = wrapper_resp.body
             resp.status = STATUS_MAPPING[wrapper_resp.status]
             for header, value in wrapper_resp.headers.items():
