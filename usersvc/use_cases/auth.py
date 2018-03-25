@@ -19,7 +19,6 @@ def create_user_token(user: User) -> Token:
     token = Token(
         version=1,
         token='insert_token_here',
-        ns='insert_namespace_here',
         permissions=user.permissions,
         owner=user.username,
     )
@@ -42,4 +41,7 @@ class AuthUseCases:
 
     def user_has_permission(self, req: UserHasPermissionRequest) -> bool:
         user = self.repo.get_user_by_id(req.user_id)
+        if not user:
+            return False
+
         return req.permission in user.permissions
