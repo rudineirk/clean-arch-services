@@ -7,7 +7,7 @@ def user_asjson(user: User) -> dict:
         'username': user.username,
         'email': user.email,
         'fullname': user.fullname,
-        'roles': [role.id for role in user.roles],
+        'roles': [role.name for role in user.roles],
     }
 
 

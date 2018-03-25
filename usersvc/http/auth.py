@@ -12,10 +12,30 @@ class AuthApi:
 
     @api.post
     def user_login(self, req: Request):
-        data = req.json
+        try:
+            data = req.json
+        except ValueError:
+            return Response(
+                'invalid request body',
+                status=http_status.UNSUPPORTED_MEDIA_TYPE,
+            )
+
+        missing_fields = []
+        if 'username' not in data:
+            missing_fields.append('username')
+        if 'password' not in data:
+            missing_fields.append('password')
+
+        if missing_fields:
+            return Response(
+                'Missing request fields: '
+                + ', '.join(missing_fields),
+                status=http_status.BAD_REQUEST,
+            )
+
         req = UserLoginRequest(
-            username=data.get('username'),
-            password=data.get('password'),
+            username=data['username'],
+            password=data['password'],
         )
         token = self.ucs.user_login(req)
         if not token:

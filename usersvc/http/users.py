@@ -68,9 +68,9 @@ class UserApi:
             password=data.get('password'),
             roles=data.get('roles'),
         )
-        user = self.ucs.create_user(req)
-        if not isinstance(user, User):
-            return Response('Duplicated data', status=http_status.CONFLICT)
+        user = self.ucs.update_user(req)
+        if not user:
+            return Response('User not found', status=http_status.NOT_FOUND)
 
         return json_response(user_asjson(user))
 
