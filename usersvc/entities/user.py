@@ -33,7 +33,7 @@ class UsersRepo(ABC):
     def get_all_users(self) -> List[User]:
         raise NotImplementedError
 
-    def create_user(self, user: User) -> User:
+    def create_user(self, user: User) -> int:
         raise NotImplementedError
 
     def update_user(self, user: User) -> bool:

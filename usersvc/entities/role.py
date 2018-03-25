@@ -21,7 +21,7 @@ class RolesRepo(ABC):
     def get_all_roles(self) -> List[Role]:
         raise NotImplementedError
 
-    def create_role(self, role: Role) -> Role:
+    def create_role(self, role: Role) -> int:
         raise NotImplementedError
 
     def update_role(self, role: Role) -> bool:

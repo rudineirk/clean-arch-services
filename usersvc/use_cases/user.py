@@ -11,17 +11,16 @@ class CreateUserRequest:
     fullname: str
     email: str
     password: str
-    roles: List[int]
+    roles: List[str]
 
 
 @dataclass
 class UpdateUserRequest:
     id: int
-    username: str
     fullname: str
     email: str
     password: str
-    roles: List[int]
+    roles: List[str]
 
 
 @dataclass
@@ -46,7 +45,7 @@ class UserUseCases:
         return self.repo.get_user_by_id(req.id)
 
     def create_user(self, req: CreateUserRequest) -> User:
-        roles = self._roles_ids_to_roles(req.roles)
+        roles = self._roles_names_to_roles(req.roles)
         if isinstance(roles, str):  # is error message
             return roles
 
@@ -70,12 +69,13 @@ class UserUseCases:
         if req.password:
             user.password = req.password
 
-        roles = self._roles_ids_to_roles(req.roles)
+        roles = self._roles_names_to_roles(req.roles)
         if isinstance(roles, str):  # is error message
             return roles
 
         user.roles = roles
         self.repo.update_user(user)
+        user = self.repo.get_user_by_id(req.id)
         return user
 
     def delete_user(self, req: DeleteUserRequest) -> User:
@@ -86,14 +86,14 @@ class UserUseCases:
         self.repo.delete_user(user)
         return user
 
-    def _roles_ids_to_roles(self, role_ids: List[int]) -> List[Role]:
+    def _roles_names_to_roles(self, role_names: List[str]) -> List[Role]:
         roles = self.roles_repo.get_all_roles()
-        roles = {role.id: role for role in roles}
+        roles = {role.name: role for role in roles}
         user_roles = []
-        for role_id in role_ids:
-            role = roles.get(role_id)
+        for name in role_names:
+            role = roles.get(name)
             if role is None:
-                return 'invalid role id: ' + str(role_id)
+                return 'invalid role: ' + name
 
             user_roles.append(role)
         return user_roles
