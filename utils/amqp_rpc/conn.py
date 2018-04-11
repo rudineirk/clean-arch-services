@@ -1,20 +1,28 @@
-from pika import SelectConnection, URLParameters
+from uuid import uuid4
+
+from gevent.event import AsyncResult
+from pika import BasicProperties, SelectConnection, URLParameters
+
+from .data import RawRpcResp
 
 RPC_EXCHANGE = 'rpc.{route}'
 RPC_QUEUE = 'rpc.{route}'
+REPLY_KEY = 'rpc.reply.{correlation_id}'
+RPC_TOPIC = 'rpc'
 
 
-class AmqpRpc:
-    def __init__(self, amqp_url, route='service.name'):
+class AmqpRpcConn:
+    def __init__(self, amqp_url, route='service.name', rpc_callback=None):
         self.amqp_url = amqp_url
         self.conn = None
         self.publish_channel = None
         self.listen_channel = None
         self.resp_channel = None
 
-        self.route = route
-        self.listen_services = {}
+        self.listen_route = route
         self.publish_routes = set()
+
+        self.rpc_callback = rpc_callback
 
         self._response_futures = {}
         self._resp_queue = ''
@@ -22,12 +30,8 @@ class AmqpRpc:
         self._listen_consumer_tag = ''
         self._closing = False
 
-    def add_service(self, service):
-        self.listen_services[service.svc.name] = service.svc.get_methods()
-        return self
-
-    def add_client(self, client):
-        self.publish_services.add(client.route)
+    def add_publish_route(self, route):
+        self.publish_services.add(route)
         return self
 
     def disconnect(self):
@@ -79,7 +83,7 @@ class AmqpRpc:
             )
 
     def create_listen_exchanges(self):
-        exchange = RPC_EXCHANGE.format(route=self.route)
+        exchange = RPC_EXCHANGE.format(route=self.listen_route)
         self.listen_channel.exchange_declare(
             exchange, 'topic',
             durable=True,
@@ -87,24 +91,24 @@ class AmqpRpc:
         )
 
     def create_listen_queue(self):
-        queue = RPC_QUEUE.format(route=self.route)
+        queue = RPC_QUEUE.format(route=self.listen_route)
         self.listen_channel.queue_declare(
             queue, durable=True,
             callback=self.on_listen_queue_declare_ok,
         )
 
     def bind_listen_queue(self):
-        queue = RPC_QUEUE.format(route=self.route)
-        exchange = RPC_EXCHANGE.format(route=self.route)
+        queue = RPC_QUEUE.format(route=self.listen_route)
+        exchange = RPC_EXCHANGE.format(route=self.listen_route)
         self.listen_channel.queue_bind(
             queue,
             exchange,
-            routing_key='rpc.call',
+            routing_key=RPC_TOPIC,
             callback=self.on_listen_bind_ok,
         )
 
     def start_listen_handler(self):
-        queue = RPC_QUEUE.format(route=self.route)
+        queue = RPC_QUEUE.format(route=self.listen_route)
         self._listen_consumer_tag = self.listen_channel.basic_consume(
             queue,
             callback=self.on_listen_message,
@@ -200,9 +204,52 @@ class AmqpRpc:
             self.close_channels()
 
     def on_listen_message(self, channel, deliver, props, body):
-        # TODO: implement message handling
-        pass
+        resp = self.rpc_callback(body, props.content_type)
+
+        reply_key = REPLY_KEY.format(
+            correlation_id=props.correlation_id,
+        )
+        resp_properties = BasicProperties(
+            content_type=resp.content_type,
+            correlation_id=reply_key,
+        )
+        self.resp_channel.basic_publish(
+            '',
+            props.reply_to,
+            resp.body,
+            resp_properties,
+        )
 
     def on_resp_message(self, channel, deliver, props, body):
-        # TODO: implement message handling
-        pass
+        try:
+            future = self._response_futures.pop(props.correlation_id)
+        except KeyError:
+            return
+
+        resp = RawRpcResp(
+            body=body,
+            content_type=props.content_type,
+        )
+        future.set(resp)
+
+    def rpc_call(self, body, route, content_type):
+        correlation_id = str(uuid4())
+        props = BasicProperties(
+            content_type=content_type,
+            correlation_id=correlation_id,
+            reply_to=self._resp_queue,
+        )
+        self.publish_channel.basic_publish(
+            route,
+            RPC_TOPIC,
+            body,
+            props,
+        )
+
+        key = REPLY_KEY.format(
+            correlation_id=correlation_id,
+        )
+        future = AsyncResult()
+        self._response_futures[key] = future
+
+        return future.get(timeout=5)
