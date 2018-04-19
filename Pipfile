@@ -11,6 +11,7 @@ pika = "*"
 falcon = "*"
 pymongo = "*"
 ujson = "*"
+ulid-py = "*"
 
 [dev-packages]
 yapf = "*"
