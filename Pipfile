@@ -1,0 +1,27 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+dataclasses = "*"
+gevent = "*"
+msgpack = "*"
+pika = "*"
+falcon = "*"
+pymongo = "*"
+ujson = "*"
+
+[dev-packages]
+yapf = "*"
+"flake8" = "*"
+jedi = "*"
+isort = "*"
+pytest = "*"
+pytest-watch = "*"
+pytest-cov = "*"
+pytest-mocha = "*"
+mongomock = "*"
+
+[requires]
+python_version = "3.6"

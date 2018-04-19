@@ -1,9 +1,0 @@
-yapf
-flake8
-jedi
-isort
-pytest
-pytest-watch
-pytest-cov
-pytest-mocha
-mongomock

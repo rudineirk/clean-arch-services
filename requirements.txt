@@ -1,7 +1,0 @@
-dataclasses
-gevent
-msgpack
-pika
-falcon
-pymongo
-ujson
