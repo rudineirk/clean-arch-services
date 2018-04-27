@@ -1,5 +1,7 @@
 from ge_amqp import AmqpParameters, IAmqpConnection
 
+from .data import RawRpcCall, RawRpcResp
+
 RPC_EXCHANGE = 'rpc.{route}'
 RPC_QUEUE = 'rpc.{route}'
 REPLY_KEY = 'rpc.reply.{correlation_id}'
@@ -7,11 +9,17 @@ RPC_TOPIC = 'rpc'
 
 
 class AmqpRpcConn:
-    def __init__(self, params: AmqpParameters, route='service.name', rpc_callback=None):
+    def __init__(
+            self,
+            params: AmqpParameters,
+            route='service.name',
+            rpc_callback=None,
+    ):
         self.conn = IAmqpConnection(params)
         self.listen_route = route
         self.rpc_callback = rpc_callback
 
+        self._rpc_call_channel = None
         self._publish_routes = set()
         self._response_futures = {}
         self._resp_queue = ''
@@ -30,6 +38,8 @@ class AmqpRpcConn:
         for route in self._publish_routes:
             exchange = RPC_EXCHANGE.format(route=route)
             channel.exchange(exchange, 'topic', durable=True)
+
+        self._rpc_call_channel = channel
 
     def _create_listen(self):
         exchange_name = RPC_EXCHANGE.format(route=self.listen_route)
@@ -87,8 +97,15 @@ class AmqpRpcConn:
         # )
         # future.set(resp)
 
-    def rpc_call(self, body, route, content_type):
-        pass
+    def rpc_call(self, rpc_call: RawRpcCall):
+        self.conn.publish(
+            self._rpc_call_channel,
+            RPC_EXCHANGE.format(route=rpc_call.route),
+            RPC_TOPIC,
+            rpc_call.payload,
+            {'Content-Type': rpc_call.content_type},
+        )
+        self.conn.p
         # TODO: Implement valid rpc call sender
         #
         # correlation_id = str(ulid.new().lower())

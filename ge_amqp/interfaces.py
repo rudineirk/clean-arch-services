@@ -55,6 +55,16 @@ class IAmqpConnection:
     def add_action(self, action):
         self.actions.append(action)
 
+    def publish(
+            self,
+            channel: 'IAmqpChannel',
+            exchange: str,
+            routing_key: str,
+            payload: bytes,
+            headers: Dict[str, str]=None
+    ):
+        raise NotImplementedError
+
 
 class IAmqpChannel:
     def __init__(self, conn, number=-1):
@@ -92,15 +102,6 @@ class IAmqpChannel:
             auto_delete=auto_delete,
             internal=internal,
         )
-
-    def publish(
-            self,
-            exchange: str,
-            routing_key: str,
-            payload: bytes,
-            headers: Dict[str, str]=None
-    ):
-        raise NotImplementedError
 
 
 class IAmqpQueue:

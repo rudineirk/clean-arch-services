@@ -3,7 +3,7 @@ from uuid import uuid4
 from gevent.event import AsyncResult
 from pika import BasicProperties, SelectConnection, URLParameters
 
-from .data import RawRpcResp
+from .data import RawRpcCall, RawRpcResp
 
 RPC_EXCHANGE = 'rpc.{route}'
 RPC_QUEUE = 'rpc.{route}'
@@ -203,8 +203,15 @@ class AmqpRpcConn:
         if not self._listen_consumer_tag:
             self.close_channels()
 
-    def on_listen_message(self, channel, deliver, props, body):
-        resp = self.rpc_callback(body, props.content_type)
+    def on_listen_message(self, channel, deliver, props, payload):
+        route = '.'.join(deliver.exchange.split('.')[1:])
+
+        call = RawRpcCall(
+            route=route,
+            payload=payload,
+            content_type=props.content_type,
+        )
+        resp = self.rpc_callback(call)
 
         reply_key = REPLY_KEY.format(
             correlation_id=props.correlation_id,
@@ -216,33 +223,34 @@ class AmqpRpcConn:
         self.resp_channel.basic_publish(
             '',
             props.reply_to,
-            resp.body,
+            resp.payload,
             resp_properties,
         )
 
-    def on_resp_message(self, channel, deliver, props, body):
+    def on_resp_message(self, channel, deliver, props, payload):
         try:
             future = self._response_futures.pop(props.correlation_id)
         except KeyError:
             return
 
         resp = RawRpcResp(
-            body=body,
+            payload=payload,
             content_type=props.content_type,
         )
         future.set(resp)
 
-    def rpc_call(self, body, route, content_type):
+    def rpc_call(self, call: RawRpcCall):
         correlation_id = str(uuid4())
         props = BasicProperties(
-            content_type=content_type,
+            content_type=call.content_type,
             correlation_id=correlation_id,
             reply_to=self._resp_queue,
         )
+        route = RPC_EXCHANGE.format(route=call.route)
         self.publish_channel.basic_publish(
             route,
             RPC_TOPIC,
-            body,
+            call.payload,
             props,
         )
 

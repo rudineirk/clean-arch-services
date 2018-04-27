@@ -1,7 +1,7 @@
 class Service:
     def __init__(self, name):
         self.name = name
-        self.methods
+        self.methods = {}
 
     def rpc(self, func_name):
         def decorator(func):
