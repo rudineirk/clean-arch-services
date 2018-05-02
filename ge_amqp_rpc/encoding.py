@@ -1,25 +1,26 @@
 import msgpack
 
-from .data import RawRpcCall, RawRpcResp, RpcCall, RpcResp
+from ge_amqp import AmqpMsg
+
+from .data import RpcCall, RpcResp
 
 CONTENT_TYPE_MSGPACK = 'application/msgpack'
 
 
-def encode_rpc_call(call: RpcCall, route: str) -> RawRpcCall:
+def encode_rpc_call(call: RpcCall) -> AmqpMsg:
     payload = msgpack.packb({
         'service': call.service,
         'method': call.method,
         'args': call.args,
     })
-    return RawRpcCall(
-        route=route,
+    return AmqpMsg(
         payload=payload,
         content_type=CONTENT_TYPE_MSGPACK,
     )
 
 
-def decode_rpc_call(raw_call: RawRpcCall) -> RpcCall:
-    payload = msgpack.unpackb(raw_call.payload)
+def decode_rpc_call(msg: AmqpMsg) -> RpcCall:
+    payload = msgpack.unpackb(msg.payload)
     return RpcCall(
         service=payload['service'],
         method=payload['method'],
@@ -27,19 +28,19 @@ def decode_rpc_call(raw_call: RawRpcCall) -> RpcCall:
     )
 
 
-def encode_rpc_resp(resp: RpcResp) -> RawRpcResp:
+def encode_rpc_resp(resp: RpcResp) -> AmqpMsg:
     payload = msgpack.packb({
         'status': resp.status,
         'body': resp.body,
     })
-    return RawRpcResp(
+    return AmqpMsg(
         payload=payload,
         content_type=CONTENT_TYPE_MSGPACK,
     )
 
 
-def decode_rpc_resp(raw_resp: RawRpcResp) -> RpcResp:
-    payload = msgpack.unpackb(raw_resp.payload)
+def decode_rpc_resp(msg: AmqpMsg) -> RpcResp:
+    payload = msgpack.unpackb(msg.payload)
     return RpcResp(
         status=payload['status'],
         body=payload['body'],

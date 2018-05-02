@@ -1,6 +1,15 @@
-from ge_amqp import AmqpParameters, PikaGeventAmqpConnection
+import ulid
+from gevent.event import AsyncResult
 
-from .data import RawRpcCall, RawRpcResp
+from ge_amqp import AmqpMsg, AmqpParameters, PikaGeventAmqpConnection
+
+from .data import RpcCall, RpcResp
+from .encoding import (
+    decode_rpc_call,
+    decode_rpc_resp,
+    encode_rpc_call,
+    encode_rpc_resp
+)
 
 RPC_EXCHANGE = 'rpc.{route}'
 RPC_QUEUE = 'rpc.{route}'
@@ -8,16 +17,18 @@ REPLY_KEY = 'rpc.reply.{correlation_id}'
 RPC_TOPIC = 'rpc'
 
 
-class AmqpRpcConn:
+class AmqpRpc:
     def __init__(
             self,
             params: AmqpParameters,
             route='service.name',
             rpc_callback=None,
+            call_timeout=5,
     ):
         self.conn = PikaGeventAmqpConnection(params)
         self.listen_route = route
         self.rpc_callback = rpc_callback
+        self._call_timeout = 5
 
         self._rpc_call_channel = None
         self._publish_routes = set()
@@ -69,7 +80,7 @@ class AmqpRpcConn:
         )
         self._resp_queue = queue.name
 
-    def on_listen_message(self, body, props):
+    def on_listen_message(self, msg: AmqpMsg):
         pass
         # TODO: Implement valid rpc call handler
         #
@@ -88,7 +99,7 @@ class AmqpRpcConn:
         #     resp_properties,
         # )
 
-    def on_resp_message(self, body, props):
+    def on_resp_message(self, msg: AmqpMsg):
         pass
         # TODO: Implement valid rpc response handler
         #
@@ -103,33 +114,24 @@ class AmqpRpcConn:
         # )
         # future.set(resp)
 
-    def rpc_call(self, rpc_call: RawRpcCall):
-        self.conn.publish(
-            self._rpc_call_channel,
-            RPC_EXCHANGE.format(route=rpc_call.route),
-            RPC_TOPIC,
-            rpc_call.payload,
-            {'Content-Type': rpc_call.content_type},
+    def rpc_call(self, call: RpcCall, timeout=-1) -> RpcResp:
+        if timeout == -1:
+            timeout = self._call_timeout
+
+        msg = encode_rpc_call(call)
+
+        msg.exchange = RPC_EXCHANGE.format(route=call.route)
+        msg.topic = RPC_TOPIC
+        msg.reply_to = self._resp_queue
+
+        correlation_id = str(ulid.new())
+        msg.correlation_id = correlation_id
+
+        self.conn.publish(self._rpc_call_channel, msg)
+        future = AsyncResult()
+        key = REPLY_KEY.format(
+            correlation_id=correlation_id,
         )
-        # TODO: Implement valid rpc call sender
-        #
-        # correlation_id = str(ulid.new().lower())
-        # props = BasicProperties(
-        #     content_type=content_type,
-        #     correlation_id=correlation_id,
-        #     reply_to=self._resp_queue,
-        # )
-        # self.publish_channel.basic_publish(
-        #     route,
-        #     RPC_TOPIC,
-        #     body,
-        #     props,
-        # )
+        self._response_futures[key] = future
 
-        # key = REPLY_KEY.format(
-        #     correlation_id=correlation_id,
-        # )
-        # future = AsyncResult()
-        # self._response_futures[key] = future
-
-        # return future.get(timeout=5)
+        return future.get(timeout=timeout)

@@ -5,20 +5,8 @@ from dataclasses import dataclass
 
 
 @dataclass
-class RawRpcResp:
-    payload: str
-    content_type: str
-
-
-@dataclass
-class RawRpcCall:
-    route: str
-    payload: str
-    content_type: str
-
-
-@dataclass
 class RpcCall:
+    route: str
     service: str
     method: str
     args: List[Any]

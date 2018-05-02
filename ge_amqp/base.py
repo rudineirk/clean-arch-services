@@ -1,7 +1,4 @@
 from abc import ABCMeta
-from typing import Callable, Dict
-
-from dataclasses import dataclass
 
 import ulid
 
@@ -14,6 +11,7 @@ from .actions import (
     DeclareExchange,
     DeclareQueue
 )
+from .data import AmqpConsumerCallback, AmqpMsg, AmqpParameters
 
 
 def create_name(name):
@@ -21,15 +19,6 @@ def create_name(name):
         name = 'private.{}'.format(str(ulid.new()).lower())
 
     return name
-
-
-@dataclass(frozen=True)
-class AmqpParameters:
-    host: str = 'localhost'
-    port: int = 5672
-    username: str = 'guest'
-    password: str = 'guest'
-    vhost: str = '/'
 
 
 class AmqpConnection(metaclass=ABCMeta):
@@ -69,10 +58,7 @@ class AmqpConnection(metaclass=ABCMeta):
     def publish(
             self,
             channel: 'AmqpChannel',
-            exchange: str,
-            routing_key: str,
-            payload: bytes,
-            headers: Dict[str, str]=None
+            msg: AmqpMsg,
     ):
         raise NotImplementedError
 
@@ -172,7 +158,7 @@ class AmqpQueue:
 
     def consume(
             self,
-            callback: Callable,
+            callback: AmqpConsumerCallback,
             auto_ack: bool=False,
             exclusive: bool=False
     ) -> 'AmqpConsumer':
@@ -223,7 +209,7 @@ class AmqpConsumer:
             conn: AmqpConnection,
             channel: AmqpChannel,
             queue: AmqpQueue,
-            callback: Callable,
+            callback: AmqpConsumerCallback,
             auto_ack: bool = False,
             exclusive: bool = False
     ):
