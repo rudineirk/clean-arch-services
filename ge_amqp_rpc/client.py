@@ -1,9 +1,8 @@
 from .data import RpcCall
-from .rpc import AmqpRpc
 
 
 class RpcClient:
-    def __init__(self, amqp_rpc: AmqpRpc, service: str, route: str):
+    def __init__(self, amqp_rpc: 'AmqpRpc', service: str, route: str):
         self.amqp_rpc = amqp_rpc
         self.service = service
         self.route = route
@@ -28,4 +27,7 @@ class RpcClient:
                 method=name,
                 args=args,
             )
-            self.amqp_rpc.rpc_call(call)
+            return self.amqp_rpc.rpc_call(call)
+
+        self.methods_cache[name] = rpc_call
+        return rpc_call
