@@ -1,4 +1,4 @@
-from ge_amqp import AmqpParameters, IAmqpConnection
+from ge_amqp import AmqpParameters, PikaGeventAmqpConnection
 
 from .data import RawRpcCall, RawRpcResp
 
@@ -15,7 +15,7 @@ class AmqpRpcConn:
             route='service.name',
             rpc_callback=None,
     ):
-        self.conn = IAmqpConnection(params)
+        self.conn = PikaGeventAmqpConnection(params)
         self.listen_route = route
         self.rpc_callback = rpc_callback
 
@@ -23,6 +23,12 @@ class AmqpRpcConn:
         self._publish_routes = set()
         self._response_futures = {}
         self._resp_queue = ''
+
+    def start(self, auto_reconnect=True):
+        self.conn.start(auto_reconnect)
+
+    def stop(self):
+        self.conn.stop()
 
     def add_publish_route(self, route):
         self._publish_routes.add(route)
@@ -105,7 +111,6 @@ class AmqpRpcConn:
             rpc_call.payload,
             {'Content-Type': rpc_call.content_type},
         )
-        self.conn.p
         # TODO: Implement valid rpc call sender
         #
         # correlation_id = str(ulid.new().lower())

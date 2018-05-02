@@ -1,7 +1,9 @@
+from abc import ABCMeta
 from typing import Callable, Dict
 
-import ulid
 from dataclasses import dataclass
+
+import ulid
 
 from .actions import (
     BindConsumer,
@@ -30,9 +32,12 @@ class AmqpParameters:
     vhost: str = '/'
 
 
-class IAmqpConnection:
+class AmqpConnection(metaclass=ABCMeta):
     def __init__(self, params: AmqpParameters):
-        self.actions = []
+        self.channel_actions = []
+        self.exchange_actions = []
+        self.queue_actions = []
+        self.consumer_actions = []
         self.add_action(CreateConnection(
             host=params.host,
             port=params.port,
@@ -43,21 +48,27 @@ class IAmqpConnection:
 
         self._channel_number = 1
 
-    def channel(self) -> 'IAmqpChannel':
+    def start(self, auto_reconnect: bool=True):
+        raise NotImplementedError
+
+    def stop(self):
+        raise NotImplementedError
+
+    def channel(self) -> 'AmqpChannel':
         number = self._channel_number
         self._channel_number += 1
 
         self.add_action(CreateChannel(
             number=number,
         ))
-        return IAmqpChannel(self, number)
+        return AmqpChannel(self, number)
 
     def add_action(self, action):
         self.actions.append(action)
 
     def publish(
             self,
-            channel: 'IAmqpChannel',
+            channel: 'AmqpChannel',
             exchange: str,
             routing_key: str,
             payload: bytes,
@@ -66,10 +77,12 @@ class IAmqpConnection:
         raise NotImplementedError
 
 
-class IAmqpChannel:
+class AmqpChannel:
     def __init__(self, conn, number=-1):
         self.conn = conn
         self.number = number
+        self._queue_cache = {}
+        self._exchange_cache = {}
 
     def queue(
             self,
@@ -77,14 +90,25 @@ class IAmqpChannel:
             durable: bool=False,
             exclusive: bool=False,
             auto_delete: bool=False
-    ) -> 'IAmqpQueue':
-        return IAmqpQueue(
+    ) -> 'AmqpQueue':
+        try:
+            if name:
+                return self._queue_cache[name]
+        except KeyError:
+            pass
+
+        queue = AmqpQueue(
             self.conn, self,
             name=name,
             durable=durable,
             exclusive=exclusive,
             auto_delete=auto_delete,
         )
+        if not name:
+            return queue
+
+        self._queue_cache[name] = queue
+        return queue
 
     def exchange(
             self,
@@ -93,8 +117,14 @@ class IAmqpChannel:
             durable: bool=False,
             auto_delete: bool=False,
             internal: bool=False,
-    ) -> 'IAmqpExchange':
-        return IAmqpExchange(
+    ) -> 'AmqpExchange':
+        try:
+            if name:
+                return self._exchange_cache[name]
+        except KeyError:
+            pass
+
+        exchange = AmqpExchange(
             self.conn, self,
             name=name,
             type=type,
@@ -102,13 +132,18 @@ class IAmqpChannel:
             auto_delete=auto_delete,
             internal=internal,
         )
+        if not name:
+            return exchange
+
+        self._exchange_cache[name] = exchange
+        return exchange
 
 
-class IAmqpQueue:
+class AmqpQueue:
     def __init__(
             self,
-            conn: IAmqpConnection,
-            channel: IAmqpChannel,
+            conn: AmqpConnection,
+            channel: AmqpChannel,
             name: str='',
             durable: bool=False,
             exclusive: bool=False,
@@ -126,7 +161,7 @@ class IAmqpQueue:
             auto_delete=auto_delete,
         ))
 
-    def bind(self, exchange: 'IAmqpExchange', routing_key: str):
+    def bind(self, exchange: 'AmqpExchange', routing_key: str):
         self.conn.add_action(BindQueue(
             channel=self.channel.number,
             queue=self.name,
@@ -140,8 +175,8 @@ class IAmqpQueue:
             callback: Callable,
             auto_ack: bool=False,
             exclusive: bool=False
-    ) -> 'IAmqpConsumer':
-        return IAmqpConsumer(
+    ) -> 'AmqpConsumer':
+        return AmqpConsumer(
             self.conn, self.channel, self,
             callback=callback,
             auto_ack=auto_ack,
@@ -149,11 +184,11 @@ class IAmqpQueue:
         )
 
 
-class IAmqpExchange:
+class AmqpExchange:
     def __init__(
             self,
-            conn: IAmqpConnection,
-            channel: IAmqpChannel,
+            conn: AmqpConnection,
+            channel: AmqpChannel,
             name: str = '',
             type: str = '',
             durable: bool = False,
@@ -172,7 +207,7 @@ class IAmqpExchange:
             internal=internal,
         ))
 
-    def bind(self, exchange: 'IAmqpExchange', routing_key: str):
+    def bind(self, exchange: 'AmqpExchange', routing_key: str):
         self.conn.add_action(BindExchange(
             channel=self.channel.number,
             src_exchange=exchange.name,
@@ -182,12 +217,12 @@ class IAmqpExchange:
         return self
 
 
-class IAmqpConsumer:
+class AmqpConsumer:
     def __init__(
             self,
-            conn: IAmqpConnection,
-            channel: IAmqpChannel,
-            queue: IAmqpQueue,
+            conn: AmqpConnection,
+            channel: AmqpChannel,
+            queue: AmqpQueue,
             callback: Callable,
             auto_ack: bool = False,
             exclusive: bool = False

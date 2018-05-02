@@ -1,15 +1,17 @@
-from .interfaces import (
+from .base import (
+    AmqpChannel,
+    AmqpConnection,
+    AmqpExchange,
     AmqpParameters,
-    IAmqpChannel,
-    IAmqpConnection,
-    IAmqpExchange,
-    IAmqpQueue
+    AmqpQueue
 )
+from .gevent import PikaGeventAmqpConnection
 
 __all__ = [
     'AmqpParameters',
-    'IAmqpChannel',
-    'IAmqpConnection',
-    'IAmqpExchange',
-    'IAmqpQueue',
+    'AmqpChannel',
+    'AmqpConnection',
+    'AmqpExchange',
+    'AmqpQueue',
+    'PikaGeventAmqpConnection',
 ]
