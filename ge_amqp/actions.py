@@ -1,10 +1,9 @@
 from typing import Callable, Dict
 
-from dataclasses import dataclass, field
+from utils.struct import Struct, field
 
 
-@dataclass(frozen=True)
-class CreateConnection:
+class CreateConnection(metaclass=Struct):
     host: str = 'localhost'
     port: int = 5672
     username: str = 'guest'
@@ -12,13 +11,11 @@ class CreateConnection:
     vhost: str = '/'
 
 
-@dataclass(frozen=True)
-class CreateChannel:
+class CreateChannel(metaclass=Struct):
     number: int = -1
 
 
-@dataclass(frozen=True)
-class DeclareQueue:
+class DeclareQueue(metaclass=Struct):
     channel: int = -1
     name: str = ''
     durable: bool = False
@@ -27,8 +24,7 @@ class DeclareQueue:
     props: Dict[str, str] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class DeclareExchange:
+class DeclareExchange(metaclass=Struct):
     channel: int = -1
     name: str = ''
     type: str = ''
@@ -38,24 +34,21 @@ class DeclareExchange:
     props: Dict[str, str] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class BindQueue:
+class BindQueue(metaclass=Struct):
     channel: int = -1
     queue: str = ''
     exchange: str = ''
     routing_key: str = ''
 
 
-@dataclass(frozen=True)
-class BindExchange:
+class BindExchange(metaclass=Struct):
     channel: int = -1
     src_exchange: str = ''
     dst_exchange: str = ''
     routing_key: str = ''
 
 
-@dataclass(frozen=True)
-class BindConsumer:
+class BindConsumer(metaclass=Struct):
     channel: int = -1
     queue: str = ''
     tag: str = ''

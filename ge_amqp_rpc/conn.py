@@ -58,12 +58,13 @@ class AmqpRpcConn:
 
         msg = encode_rpc_call(call)
 
-        msg.exchange = RPC_EXCHANGE.format(route=call.route)
-        msg.topic = RPC_TOPIC
-        msg.reply_to = self._resp_queue
-
         correlation_id = str(ulid.new())
-        msg.correlation_id = correlation_id
+        msg = msg.replace(
+            exchange=RPC_EXCHANGE.format(route=call.route),
+            topic=RPC_TOPIC,
+            reply_to=self._resp_queue,
+            correlation_id=correlation_id,
+        )
 
         self.conn.publish(self._rpc_call_channel, msg)
         future = AsyncResult()
@@ -78,11 +79,14 @@ class AmqpRpcConn:
         call = decode_rpc_call(msg)
         resp = self.rpc_callback(call)
 
+        resp_msg = encode_rpc_resp(resp)
+
         correlation_id = REPLY_KEY.format(
             correlation_id=msg.correlation_id,
         )
-        resp_msg = encode_rpc_resp(resp)
-        resp_msg.correlation_id = correlation_id
+        resp_msg = resp_msg.replace(
+            correlation_id=correlation_id,
+        )
 
         self.conn.publish(self._rpc_call_channel, resp_msg)
 

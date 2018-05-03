@@ -1,12 +1,11 @@
 from typing import Callable, Dict
 
-from dataclasses import dataclass, field
+from utils.struct import Struct, field
 
 CONTENT_TYPE_MSGPACK = 'application/msgpack'
 
 
-@dataclass(frozen=True)
-class AmqpParameters:
+class AmqpParameters(metaclass=Struct):
     host: str = 'localhost'
     port: int = 5672
     username: str = 'guest'
@@ -14,8 +13,7 @@ class AmqpParameters:
     vhost: str = '/'
 
 
-@dataclass
-class AmqpMsg:
+class AmqpMsg(metaclass=Struct):
     payload: bytes
     content_type: str = CONTENT_TYPE_MSGPACK
     correlation_id: str = ''

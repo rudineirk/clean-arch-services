@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import Any, Callable, List
 
-from dataclasses import dataclass
+from utils.struct import Struct
 
 OK = HTTPStatus.OK
 SERVICE_NOT_FOUND = HTTPStatus.NOT_FOUND
@@ -10,16 +10,14 @@ CALL_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR
 CALL_ARGS_MISMATCH = HTTPStatus.BAD_REQUEST
 
 
-@dataclass
-class RpcCall:
+class RpcCall(metaclass=Struct):
     route: str
     service: str
     method: str
     args: List[Any]
 
 
-@dataclass
-class RpcResp:
+class RpcResp(metaclass=Struct):
     status: int
     body: Any = None
 
