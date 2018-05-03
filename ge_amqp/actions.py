@@ -1,6 +1,6 @@
-from typing import Callable
+from typing import Callable, Dict
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,7 @@ class DeclareQueue:
     durable: bool = False
     exclusive: bool = False
     auto_delete: bool = False
+    props: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -34,6 +35,7 @@ class DeclareExchange:
     durable: bool = False
     auto_delete: bool = False
     internal: bool = False
+    props: Dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

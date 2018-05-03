@@ -23,4 +23,4 @@ class AmqpMsg:
     headers: Dict[str, str] = field(default_factory=dict)
 
 
-AmqpConsumerCallback = Callable[AmqpMsg]
+AmqpConsumerCallback = Callable[[AmqpMsg], None]

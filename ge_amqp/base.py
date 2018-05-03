@@ -1,4 +1,5 @@
 from abc import ABCMeta
+from typing import Dict
 
 import ulid
 
@@ -23,10 +24,7 @@ def create_name(name):
 
 class AmqpConnection(metaclass=ABCMeta):
     def __init__(self, params: AmqpParameters):
-        self.channel_actions = []
-        self.exchange_actions = []
-        self.queue_actions = []
-        self.consumer_actions = []
+        self.actions = []
         self.add_action(CreateConnection(
             host=params.host,
             port=params.port,
@@ -36,6 +34,9 @@ class AmqpConnection(metaclass=ABCMeta):
         ))
 
         self._channel_number = 1
+
+    def configure(self):
+        raise NotImplementedError
 
     def start(self, auto_reconnect: bool=True):
         raise NotImplementedError
@@ -75,7 +76,8 @@ class AmqpChannel:
             name: str='',
             durable: bool=False,
             exclusive: bool=False,
-            auto_delete: bool=False
+            auto_delete: bool=False,
+            props: Dict[str, str]=None,
     ) -> 'AmqpQueue':
         try:
             if name:
@@ -89,6 +91,7 @@ class AmqpChannel:
             durable=durable,
             exclusive=exclusive,
             auto_delete=auto_delete,
+            props=props,
         )
         if not name:
             return queue
@@ -103,6 +106,7 @@ class AmqpChannel:
             durable: bool=False,
             auto_delete: bool=False,
             internal: bool=False,
+            props: Dict[str, str]=None,
     ) -> 'AmqpExchange':
         try:
             if name:
@@ -117,6 +121,7 @@ class AmqpChannel:
             durable=durable,
             auto_delete=auto_delete,
             internal=internal,
+            props=props,
         )
         if not name:
             return exchange
@@ -134,10 +139,14 @@ class AmqpQueue:
             durable: bool=False,
             exclusive: bool=False,
             auto_delete: bool=False,
+            props: Dict[str, str]=None,
     ):
         self.conn = conn
         self.channel = channel
         self.name = create_name(name)
+
+        if props is None:
+            props = {}
 
         self.conn.add_action(DeclareQueue(
             channel=channel.number,
@@ -145,6 +154,7 @@ class AmqpQueue:
             durable=durable,
             exclusive=exclusive,
             auto_delete=auto_delete,
+            props=props,
         ))
 
     def bind(self, exchange: 'AmqpExchange', routing_key: str):
@@ -180,10 +190,14 @@ class AmqpExchange:
             durable: bool = False,
             auto_delete: bool = False,
             internal: bool = False,
+            props: Dict[str, str]=None,
     ):
         self.conn = conn
         self.channel = channel
         self.name = create_name(name)
+
+        if props is None:
+            props = {}
 
         self.conn.add_action(DeclareExchange(
             channel=channel.number,
@@ -191,6 +205,7 @@ class AmqpExchange:
             durable=durable,
             auto_delete=auto_delete,
             internal=internal,
+            props=props,
         ))
 
     def bind(self, exchange: 'AmqpExchange', routing_key: str):

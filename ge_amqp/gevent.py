@@ -1,5 +1,12 @@
-from .interfaces import AmqpConnection
+from .base import AmqpConnection
 
 
 class PikaGeventAmqpConnection(AmqpConnection):
-    pass
+    def configure(self):
+        pass
+
+    def start(self, auto_reconnect=True):
+        pass
+
+    def stop(self):
+        pass
