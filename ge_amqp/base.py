@@ -33,7 +33,7 @@ class AmqpConnection(metaclass=ABCMeta):
             vhost=params.vhost,
         ))
 
-        self._channel_number = 1
+        self._channel_number = 0
 
     def configure(self):
         raise NotImplementedError
