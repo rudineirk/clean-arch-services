@@ -1,7 +1,8 @@
 import ulid
 from gevent.event import AsyncResult
 
-from ge_amqp import AmqpMsg, AmqpParameters, PikaGeventAmqpConnection
+from ge_amqp import AmqpMsg, AmqpParameters
+from ge_amqp.gevent import GeventAmqpConnection
 
 from .data import RPC_CALL_TIMEOUT, RpcCall, RpcCallback, RpcResp
 from .encoding import (
@@ -25,7 +26,7 @@ class AmqpRpcConn:
             rpc_callback: RpcCallback = None,
             call_timeout: int=RPC_CALL_TIMEOUT,
     ):
-        self.conn = PikaGeventAmqpConnection(params)
+        self.conn = GeventAmqpConnection(params)
         self.listen_route = route
         self.rpc_callback = rpc_callback
         self._call_timeout = call_timeout

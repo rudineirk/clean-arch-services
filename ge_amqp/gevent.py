@@ -1,7 +1,7 @@
 from .base import AmqpConnection
 
 
-class PikaGeventAmqpConnection(AmqpConnection):
+class GeventAmqpConnection(AmqpConnection):
     def configure(self):
         pass
 

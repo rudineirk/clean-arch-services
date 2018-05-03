@@ -1,6 +1,5 @@
 from .base import AmqpChannel, AmqpConnection, AmqpExchange, AmqpQueue
 from .data import AmqpConsumerCallback, AmqpMsg, AmqpParameters
-from .gevent import PikaGeventAmqpConnection
 
 __all__ = [
     'AmqpParameters',
@@ -11,5 +10,4 @@ __all__ = [
     'AmqpMsg',
     'AmqpParameters',
     'AmqpConsumerCallback',
-    'PikaGeventAmqpConnection',
 ]
