@@ -10,6 +10,7 @@ from .data import (
     CALL_ERROR,
     METHOD_NOT_FOUND,
     OK,
+    RPC_CALL_TIMEOUT,
     SERVICE_NOT_FOUND,
     RpcCall,
     RpcResp
@@ -21,7 +22,7 @@ class AmqpRpc(AmqpRpcConn):
             self,
             params: AmqpParameters,
             route: str='service.name',
-            call_timeout=5,
+            call_timeout=RPC_CALL_TIMEOUT,
     ):
         super().__init__(
             params=params,
