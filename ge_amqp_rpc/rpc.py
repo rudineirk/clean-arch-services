@@ -14,29 +14,22 @@ from .data import (
     RpcCall,
     RpcResp
 )
-from .exceptions import MethodNotFound, ServiceNotFound
 
 
-class AmqpRpc:
+class AmqpRpc(AmqpRpcConn):
     def __init__(
             self,
             params: AmqpParameters,
             route: str='service.name',
             call_timeout=5,
     ):
-        self.conn = AmqpRpcConn(
-            params,
+        super().__init__(
+            params=params,
             route=route,
             call_timeout=call_timeout,
             rpc_callback=self.rpc_callback,
         )
         self.services = {}
-
-    def start(self, auto_reconnect=True):
-        self.conn.start(auto_reconnect)
-
-    def stop(self):
-        self.conn.stop()
 
     def add_svc(self, service) -> 'AmqpRpc':
         self.services[service.svc.name] = \
@@ -45,11 +38,11 @@ class AmqpRpc:
         return self
 
     def client(self, service: str, route: str) -> RpcClient:
-        self.conn.add_publish_route(route)
+        self.add_publish_route(route)
         return RpcClient(self, service, route)
 
-    def rpc_call(self, call: RpcCall) -> RpcResp:
-        return self.conn.rpc_call(call)
+    def call(self, call: RpcCall) -> RpcResp:
+        return self.send_rpc_call(call)
 
     def rpc_callback(self, call: RpcCall) -> RpcResp:
         method, resp = self._get_method(call.service, call.method)

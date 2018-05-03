@@ -27,7 +27,7 @@ class RpcClient:
                 method=name,
                 args=args,
             )
-            return self.amqp_rpc.rpc_call(call)
+            return self.amqp_rpc.call(call)
 
         self.methods_cache[name] = rpc_call
         return rpc_call
