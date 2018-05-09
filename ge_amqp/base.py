@@ -33,7 +33,7 @@ class AmqpConnection(metaclass=ABCMeta):
             vhost=params.vhost,
         ))
 
-        self._channel_number = 0
+        self._channel_number = 1
 
     def configure(self):
         raise NotImplementedError
@@ -55,6 +55,13 @@ class AmqpConnection(metaclass=ABCMeta):
 
     def add_action(self, action):
         self.actions.append(action)
+
+    def cancel_consumer(
+            self,
+            channel: 'AmqpChannel',
+            consumer: 'AmqpConsumer',
+    ):
+        raise NotImplementedError
 
     def publish(
             self,
@@ -129,6 +136,9 @@ class AmqpChannel:
         self._exchange_cache[name] = exchange
         return exchange
 
+    def cancel_consumer(self, consumer: 'AmqpConsumer'):
+        self.conn.cancel_consumer(self, consumer)
+
 
 class AmqpQueue:
     def __init__(
@@ -157,12 +167,18 @@ class AmqpQueue:
             props=props,
         ))
 
-    def bind(self, exchange: 'AmqpExchange', routing_key: str):
+    def bind(
+            self,
+            exchange: 'AmqpExchange',
+            routing_key: str,
+            props: Dict[str, str] = None,
+    ):
         self.conn.add_action(BindQueue(
             channel=self.channel.number,
             queue=self.name,
             exchange=exchange.name,
             routing_key=routing_key,
+            props=props,
         ))
         return self
 
@@ -170,13 +186,15 @@ class AmqpQueue:
             self,
             callback: AmqpConsumerCallback,
             auto_ack: bool=False,
-            exclusive: bool=False
+            exclusive: bool=False,
+            nack_requeue: bool=True,
     ) -> 'AmqpConsumer':
         return AmqpConsumer(
             self.conn, self.channel, self,
             callback=callback,
             auto_ack=auto_ack,
             exclusive=exclusive,
+            nack_requeue=nack_requeue,
         )
 
 
@@ -208,12 +226,18 @@ class AmqpExchange:
             props=props,
         ))
 
-    def bind(self, exchange: 'AmqpExchange', routing_key: str):
+    def bind(
+            self,
+            exchange: 'AmqpExchange',
+            routing_key: str,
+            props: Dict[str, str] = None,
+    ):
         self.conn.add_action(BindExchange(
             channel=self.channel.number,
             src_exchange=exchange.name,
             dst_exchange=self.name,
             routing_key=routing_key,
+            props=props,
         ))
         return self
 
@@ -226,7 +250,8 @@ class AmqpConsumer:
             queue: AmqpQueue,
             callback: AmqpConsumerCallback,
             auto_ack: bool = False,
-            exclusive: bool = False
+            exclusive: bool = False,
+            nack_requeue: bool = True,
     ):
         self.conn = conn
         self.channel = channel
@@ -242,4 +267,4 @@ class AmqpConsumer:
         ))
 
     def cancel(self):
-        self.channel.cancel(self.tag)
+        self.channel.cancel_consumer(self)
