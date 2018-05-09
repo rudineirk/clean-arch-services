@@ -67,6 +67,24 @@ class GeventAmqpConnection(AmqpConnection):
         real_channel = self._get_channel(channel.number)
         self._cancel_consumer(real_channel, consumer.tag)
 
+    def publish(self, channel: AmqpChannel, msg: AmqpMsg):
+        real_channel = self._get_channel(channel.number)
+
+        properties = pika.BasicProperties(
+            content_type=msg.content_type,
+            content_encoding=msg.encoding,
+            correlation_id=msg.correlation_id,
+            reply_to=msg.reply_to,
+            expiration=msg.expiration,
+            headers=msg.headers,
+        )
+        real_channel.basic_publish(
+            msg.exchange,
+            msg.topic,
+            msg.payload,
+            properties,
+        )
+
     def _action_processor(self):
         while True:
             ok = True
@@ -277,6 +295,8 @@ class GeventAmqpConnection(AmqpConnection):
                 payload=payload,
                 content_type=props.content_type,
                 encoding=props.encoding,
+                exchange=deliver.exchange,
+                topic=deliver.routing_key,
                 correlation_id=props.correlation_id,
                 reply_to=props.reply_to,
                 expiration=props.expiration,
