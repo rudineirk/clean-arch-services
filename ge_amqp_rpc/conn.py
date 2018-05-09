@@ -68,7 +68,7 @@ class AmqpRpcConn:
             correlation_id=correlation_id,
         )
 
-        self.conn.publish(self._rpc_call_channel, msg)
+        self._rpc_call_channel.publish(msg)
         future = AsyncResult()
         key = REPLY_KEY.format(
             correlation_id=correlation_id,
