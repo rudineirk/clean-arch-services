@@ -1,7 +1,6 @@
 from abc import ABCMeta
 from typing import Dict
-
-import ulid
+from uuid import uuid4
 
 from .actions import (
     BindConsumer,
@@ -17,7 +16,7 @@ from .data import AmqpConsumerCallback, AmqpMsg, AmqpParameters
 
 def create_name(name):
     if not name:
-        name = 'private.{}'.format(str(ulid.new()).lower())
+        name = 'private.{}'.format(str(uuid4()))
 
     return name
 
@@ -254,7 +253,7 @@ class AmqpConsumer:
     ):
         self.conn = conn
         self.channel = channel
-        self.tag = 'consumer.{}'.format(str(ulid.new()).lower())
+        self.tag = 'consumer.{}'.format(str(uuid4()))
 
         conn.add_action(BindConsumer(
             channel=channel.number,

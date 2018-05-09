@@ -1,4 +1,5 @@
-import ulid
+from uuid import uuid4
+
 from gevent.event import AsyncResult
 
 from ge_amqp import AmqpMsg, AmqpParameters
@@ -59,7 +60,7 @@ class AmqpRpcConn:
 
         msg = encode_rpc_call(call)
 
-        correlation_id = str(ulid.new())
+        correlation_id = str(uuid4())
         msg = msg.replace(
             exchange=RPC_EXCHANGE.format(route=call.route),
             topic=RPC_TOPIC,
