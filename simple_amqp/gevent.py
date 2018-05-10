@@ -21,7 +21,7 @@ from .data import AmqpMsg, AmqpParameters
 
 NEXT_ACTION = 1
 LOG_LEVEL = environ.get('LOG_LEVEL', 'error')
-log = logging.getLogger('ge_amqp.gevent.conn')
+log = logging.getLogger('simple_amqp.gevent.conn')
 log_handler = logging.StreamHandler()
 log_handler.setFormatter(logging.Formatter(
     '[%(asctime)s] %(name)s %(levelname)8s - %(message)s',

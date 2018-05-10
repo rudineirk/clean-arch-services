@@ -4,9 +4,10 @@ monkey.patch_all()  # isort:skip
 from gevent import sleep  # noqa: E402
 
 from simple_amqp import AmqpParameters  # noqa: E402
-from simple_amqp_rpc import AmqpRpc, Service  # noqa: E402
+from simple_amqp_rpc import Service  # noqa: E402
+from simple_amqp_rpc.gevent import GeventAmqpRpc  # noqa: E402
 
-rpc_conn = AmqpRpc(
+rpc_conn = GeventAmqpRpc(
     AmqpParameters(),
     'ping',
 )

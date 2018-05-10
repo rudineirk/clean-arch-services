@@ -7,11 +7,12 @@ name = "pypi"
 dataclasses = "*"
 gevent = "*"
 msgpack = "*"
-pika = "*"
+pika = ">=0.10,<0.11"
 falcon = "*"
 pymongo = "*"
 ujson = "*"
 ulid-py = "*"
+aio-pika = "*"
 
 [dev-packages]
 yapf = "*"

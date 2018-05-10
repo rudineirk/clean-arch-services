@@ -4,9 +4,13 @@ from gevent.event import AsyncResult
 
 from simple_amqp import AmqpMsg, AmqpParameters
 from simple_amqp.gevent import GeventAmqpConnection
-
-from .data import RPC_CALL_TIMEOUT, RpcCall, RpcCallback, RpcResp
-from .encoding import (
+from simple_amqp_rpc.data import (
+    RPC_CALL_TIMEOUT,
+    RpcCall,
+    RpcCallback,
+    RpcResp
+)
+from simple_amqp_rpc.encoding import (
     decode_rpc_call,
     decode_rpc_resp,
     encode_rpc_call,
@@ -19,7 +23,7 @@ REPLY_KEY = 'rpc.reply.{correlation_id}'
 RPC_TOPIC = 'rpc'
 
 
-class AmqpRpcConn:
+class GeventAmqpRpcConn:
     def __init__(
             self,
             params: AmqpParameters,

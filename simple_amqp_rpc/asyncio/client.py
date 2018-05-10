@@ -1,7 +1,7 @@
-from .data import RpcCall
+from simple_amqp_rpc.data import RpcCall
 
 
-class RpcClient:
+class AsyncioRpcClient:
     def __init__(self, amqp_rpc: 'AmqpRpc', service: str, route: str):
         self.amqp_rpc = amqp_rpc
         self.service = service
@@ -20,14 +20,14 @@ class RpcClient:
         except KeyError:
             pass
 
-        def rpc_call(*args):
+        async def rpc_call(*args):
             call = RpcCall(
                 route=self.route,
                 service=self.service,
                 method=name,
                 args=args,
             )
-            return self.amqp_rpc.call(call)
+            return await self.amqp_rpc.call(call)
 
         self.methods_cache[name] = rpc_call
         return rpc_call

@@ -2,10 +2,7 @@ import traceback
 from typing import Callable, Tuple
 
 from simple_amqp import AmqpParameters
-
-from .client import RpcClient
-from .conn import AmqpRpcConn
-from .data import (
+from simple_amqp_rpc.data import (
     CALL_ARGS_MISMATCH,
     CALL_ERROR,
     METHOD_NOT_FOUND,
@@ -16,8 +13,11 @@ from .data import (
     RpcResp
 )
 
+from .client import GeventRpcClient
+from .conn import GeventAmqpRpcConn
 
-class AmqpRpc(AmqpRpcConn):
+
+class GeventAmqpRpc(GeventAmqpRpcConn):
     def __init__(
             self,
             params: AmqpParameters,
@@ -38,9 +38,9 @@ class AmqpRpc(AmqpRpcConn):
 
         return self
 
-    def client(self, service: str, route: str) -> RpcClient:
+    def client(self, service: str, route: str) -> GeventRpcClient:
         self.add_publish_route(route)
-        return RpcClient(self, service, route)
+        return GeventRpcClient(self, service, route)
 
     def call(self, call: RpcCall) -> RpcResp:
         return self.send_rpc_call(call)

@@ -132,7 +132,7 @@ class AmqpChannel:
         return exchange
 
     def publish(self, msg: AmqpMsg):
-        self.conn.publish(self, msg)
+        return self.conn.publish(self, msg)
 
     def cancel_consumer(self, consumer: 'AmqpConsumer'):
         self.conn.cancel_consumer(self, consumer)

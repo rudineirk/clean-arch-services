@@ -4,9 +4,10 @@ monkey.patch_all()  # isort:skip
 import timeit  # noqa: E402
 
 from simple_amqp import AmqpParameters  # noqa: E402
-from simple_amqp_rpc import AmqpRpc, Service  # noqa: E402
+from simple_amqp_rpc import Service  # noqa: E402
+from simple_amqp_rpc.gevent import GeventAmqpRpc  # noqa: E402
 
-rpc_conn = AmqpRpc(
+rpc_conn = GeventAmqpRpc(
     AmqpParameters(),
     'pong',
 )
@@ -40,5 +41,5 @@ while True:
     start = timeit.default_timer()
     print(pong_service.pong('duck'))
     end = timeit.default_timer()
-    print('## dt {0:.2f}ms'.format((end - start) / 1000))
+    print('## dt {0:.2f}ms'.format((end - start) * 1000))
     print('## resp')
