@@ -64,4 +64,5 @@ class BindConsumer(metaclass=Struct):
     auto_ack: bool = False
     exclusive: bool = False
     nack_requeue: bool = True
+    props: Dict[str, str] = field(default_factory=dict)
     TYPE: str = 'consumer.bind'

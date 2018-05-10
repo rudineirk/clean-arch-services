@@ -1,7 +1,7 @@
 from gevent import monkey  # isort:skip
 monkey.patch_all()  # isort:skip
 
-from time import sleep  # noqa: E402
+from gevent import sleep  # noqa: E402
 
 from ge_amqp import AmqpParameters  # noqa: E402
 from ge_amqp_rpc import AmqpRpc, Service  # noqa: E402
@@ -16,7 +16,7 @@ class PingService:
     svc = Service('ping')
 
     @svc.rpc
-    def ping(name: str):
+    def ping(self, name: str):
         return 'pong: {}'.format(name)
 
 
@@ -26,7 +26,7 @@ rpc_conn \
     .add_svc(ping_service)
 
 rpc_conn.configure()
-rpc_conn.start(wait=False)
+rpc_conn.start()
 
 while True:
     sleep(1)

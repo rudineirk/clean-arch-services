@@ -78,7 +78,7 @@ class AmqpRpcConn:
         return future.get(timeout=timeout)
 
     def on_listen_message(self, msg: AmqpMsg):
-        call = decode_rpc_call(msg)
+        call = decode_rpc_call(msg, self.listen_route)
         resp = self.rpc_callback(call)
 
         resp_msg = encode_rpc_resp(resp)
@@ -87,19 +87,22 @@ class AmqpRpcConn:
             correlation_id=msg.correlation_id,
         )
         resp_msg = resp_msg.replace(
+            topic=msg.reply_to,
             correlation_id=correlation_id,
         )
 
         self.conn.publish(self._rpc_call_channel, resp_msg)
+        return True
 
     def on_resp_message(self, msg: AmqpMsg):
         try:
             future = self._response_futures.pop(msg.correlation_id)
         except KeyError:
-            return
+            return True
 
         resp = decode_rpc_resp(msg)
         future.set(resp)
+        return True
 
     def _create_publish(self):
         channel = self.conn.channel()

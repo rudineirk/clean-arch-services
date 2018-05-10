@@ -19,12 +19,13 @@ def encode_rpc_call(call: RpcCall) -> AmqpMsg:
     )
 
 
-def decode_rpc_call(msg: AmqpMsg) -> RpcCall:
-    payload = msgpack.unpackb(msg.payload)
+def decode_rpc_call(msg: AmqpMsg, route: str) -> RpcCall:
+    payload = msgpack.unpackb(msg.payload, encoding='utf8')
     return RpcCall(
         service=payload['service'],
         method=payload['method'],
         args=payload['args'],
+        route=route,
     )
 
 
@@ -40,7 +41,7 @@ def encode_rpc_resp(resp: RpcResp) -> AmqpMsg:
 
 
 def decode_rpc_resp(msg: AmqpMsg) -> RpcResp:
-    payload = msgpack.unpackb(msg.payload)
+    payload = msgpack.unpackb(msg.payload, encoding='utf8')
     return RpcResp(
         status=payload['status'],
         body=payload['body'],

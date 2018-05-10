@@ -1,7 +1,7 @@
 from gevent import monkey  # isort:skip
 monkey.patch_all()  # isort:skip
 
-from time import sleep  # noqa: E402
+import timeit  # noqa: E402
 
 from ge_amqp import AmqpParameters  # noqa: E402
 from ge_amqp_rpc import AmqpRpc, Service  # noqa: E402
@@ -18,7 +18,7 @@ class PongService:
     svc = Service('pong')
 
     @svc.rpc
-    def pong(name: str):
+    def pong(self, name: str):
         resp = PingClient.ping(name)
         return 'resp [{}]: {}'.format(
             resp.status,
@@ -32,8 +32,13 @@ rpc_conn \
     .add_svc(pong_service)
 
 rpc_conn.configure()
-rpc_conn.start(wait=False)
+rpc_conn.start()
+print('## started')
 
 while True:
-    sleep(1)
+    print('## req')
+    start = timeit.default_timer()
     print(pong_service.pong('duck'))
+    end = timeit.default_timer()
+    print('## dt {0:.2f}ms'.format((end - start) / 1000))
+    print('## resp')

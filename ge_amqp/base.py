@@ -171,6 +171,9 @@ class AmqpQueue:
             routing_key: str,
             props: Dict[str, str] = None,
     ):
+        if props is None:
+            props = {}
+
         self.conn.add_action(BindQueue(
             channel=self.channel.number,
             queue=self.name,
@@ -186,6 +189,7 @@ class AmqpQueue:
             auto_ack: bool=False,
             exclusive: bool=False,
             nack_requeue: bool=True,
+            props: Dict[str, str] = None,
     ) -> 'AmqpConsumer':
         return AmqpConsumer(
             self.conn, self.channel, self,
@@ -202,7 +206,7 @@ class AmqpExchange:
             conn: AmqpConnection,
             channel: AmqpChannel,
             name: str = '',
-            type: str = '',
+            type: str = 'direct',
             durable: bool = False,
             auto_delete: bool = False,
             internal: bool = False,
@@ -218,6 +222,7 @@ class AmqpExchange:
         self.conn.add_action(DeclareExchange(
             channel=channel.number,
             name=self.name,
+            type=type,
             durable=durable,
             auto_delete=auto_delete,
             internal=internal,
@@ -230,6 +235,9 @@ class AmqpExchange:
             routing_key: str,
             props: Dict[str, str] = None,
     ):
+        if props is None:
+            props = {}
+
         self.conn.add_action(BindExchange(
             channel=self.channel.number,
             src_exchange=exchange.name,
@@ -250,10 +258,14 @@ class AmqpConsumer:
             auto_ack: bool = False,
             exclusive: bool = False,
             nack_requeue: bool = True,
+            props: Dict[str, str] = None,
     ):
         self.conn = conn
         self.channel = channel
         self.tag = 'consumer.{}'.format(str(uuid4()))
+
+        if props is None:
+            props = {}
 
         conn.add_action(BindConsumer(
             channel=channel.number,
@@ -262,6 +274,7 @@ class AmqpConsumer:
             callback=callback,
             auto_ack=auto_ack,
             exclusive=exclusive,
+            props=props,
         ))
 
     def cancel(self):

@@ -1,4 +1,6 @@
+import logging
 import traceback
+from os import environ
 from time import sleep
 
 import pika
@@ -18,6 +20,14 @@ from .base import AmqpChannel, AmqpConnection, AmqpConsumer
 from .data import AmqpMsg, AmqpParameters
 
 NEXT_ACTION = 1
+LOG_LEVEL = environ.get('LOG_LEVEL', 'error')
+log = logging.getLogger('ge_amqp.gevent.conn')
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter(
+    '[%(asctime)s] %(name)s %(levelname)8s - %(message)s',
+))
+log.addHandler(log_handler)
+log.setLevel(getattr(logging, LOG_LEVEL.upper()))
 
 
 class GeventAmqpConnection(AmqpConnection):
@@ -26,6 +36,8 @@ class GeventAmqpConnection(AmqpConnection):
         self._pika_conn = None
         self._pika_channels = {}
         self._pika_consumers = {}
+
+        self._open_conn_action = None
 
         self._closing = False
         self._closing_fut = None
@@ -36,6 +48,7 @@ class GeventAmqpConnection(AmqpConnection):
         self._processor_fut = None
         self._conn_error_handler = None
         self._consumer_error_handler = None
+        self.log = log
 
     def add_conn_error_handler(self, handler):
         self._conn_error_handler = handler
@@ -49,6 +62,8 @@ class GeventAmqpConnection(AmqpConnection):
     def start(self, auto_reconnect=True, wait=True):
         self._closing = False
         self._auto_reconnect = auto_reconnect
+        self._open_conn_action = self.actions[0]
+        self.actions = self.actions[1:]
         if wait:
             self._action_processor()
         else:
@@ -68,6 +83,11 @@ class GeventAmqpConnection(AmqpConnection):
         self._cancel_consumer(real_channel, consumer.tag)
 
     def publish(self, channel: AmqpChannel, msg: AmqpMsg):
+        self.log.info(
+            'publishing message on channel {}'
+            .format(channel.number)
+        )
+        self.log.debug('publishing message: {}'.format(str(msg)))
         real_channel = self._get_channel(channel.number)
 
         properties = pika.BasicProperties(
@@ -86,11 +106,13 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _action_processor(self):
+        self.log.info('Starting action processor')
         while True:
             ok = True
             try:
                 self._run_actions()
             except Exception as e:
+                self.log.error('an error ocurred when processing actions')
                 self._processor_fut = None
                 ok = False
                 if self._conn_error_handler:
@@ -99,14 +121,23 @@ class GeventAmqpConnection(AmqpConnection):
                     traceback.print_exc()
 
             if ok:
+                self.log.info('Action processor done')
+
+            if ok:
                 return
             elif not self._auto_reconnect:
                 return
 
             sleep(self.reconnect_delay)
+            self.log.info('retrying to process actions')
 
     def _run_actions(self):
-        for action in self.actions:
+        actions = [*self.actions]
+        if not self._pika_conn:
+            actions.insert(0, self._open_conn_action)
+
+        for action in actions:
+            self.log.debug('action: {}'.format(str(action)))
             self._processor_fut = AsyncResult()
             if action.TYPE == CreateConnection.TYPE:
                 self._connect(action)
@@ -149,6 +180,7 @@ class GeventAmqpConnection(AmqpConnection):
         self._pika_consumers = {}
 
     def _connect(self, action: CreateConnection):
+        self.log.info('starting connection')
         self._pika_conn = pika.SelectConnection(
             pika.ConnectionParameters(
                 host=action.host,
@@ -164,6 +196,7 @@ class GeventAmqpConnection(AmqpConnection):
             self._on_connection_close,
             stop_ioloop_on_close=False,
         )
+        spawn(self._pika_conn.ioloop.start)
 
     def _stop_consuming(self):
         for channel_number, consumer_tags in self._pika_consumers.items():
@@ -190,12 +223,15 @@ class GeventAmqpConnection(AmqpConnection):
         pass
 
     def _on_connection_open(self, conn):
+        self.log.info('connection opened')
         self._next_action()
 
     def _on_connection_error(self, conn, err):
+        self.log.info('connection error')
         self._action_error(err)
 
-    def _on_connection_close(self, conn):
+    def _on_connection_close(self, conn, *_):
+        self.log.info('connection closed')
         if self._processor_fut:
             self._processor_fut.set_exception(
                 ConnectionAbortedError('amqp connection closed'),
@@ -212,22 +248,32 @@ class GeventAmqpConnection(AmqpConnection):
             sleep(self.reconnect_delay)
             spawn(self._action_processor)
 
-        self._closing_fut.set(True)
+        if self._closing_fut:
+            self._closing_fut.set(True)
 
     def _create_channel(self, action: CreateChannel):
-        self._pika_conn.channel(self._on_channel_open, action.number)
+        self.log.info('creating channel {}'.format(action.number))
+        self._pika_conn.channel(
+            lambda channel: self._on_channel_open(channel, action.number),
+        )
 
-    def _on_channel_open(self, channel):
-        self._set_channel(channel.channel_number, channel)
+    def _on_channel_open(self, channel, number):
+        self.log.info('channel {} opened'.format(number))
+        self._set_channel(number, channel)
         channel.add_on_close_callback(self._on_channel_closed)
         self._next_action()
 
     def _on_channel_closed(self, channel, *_):
-        self._remove_channel(channel.channel_number)
-        if not self._pika_channels:
-            self._pika_conn.close()
+        for key, value in list(self._pika_channels.items()):
+            if value == channel:
+                self.log.info('channel {} closed'.format(key))
+                self._remove_channel(key)
+
+        if not self._pika_channels and self._auto_reconnect:
+            spawn(self._action_processor)
 
     def _declare_queue(self, action: DeclareQueue):
+        self.log.info('declaring queue {}'.format(action.name))
         channel = self._get_channel(action.channel)
         channel.queue_declare(
             queue=action.name,
@@ -235,13 +281,15 @@ class GeventAmqpConnection(AmqpConnection):
             exclusive=action.exclusive,
             auto_delete=action.auto_delete,
             arguments=action.props,
-            callback=self._on_queue_declare,
+            callback=lambda *_: self._on_queue_declare(action),
         )
 
-    def _on_queue_declare(self, _):
+    def _on_queue_declare(self, action: DeclareQueue):
+        self.log.info('queue {} declared'.format(action.name))
         self._next_action()
 
     def _declare_exchange(self, action: DeclareExchange):
+        self.log.info('declaring exchange {}'.format(action.name))
         channel = self._get_channel(action.channel)
         channel.exchange_declare(
             exchange=action.name,
@@ -250,51 +298,68 @@ class GeventAmqpConnection(AmqpConnection):
             auto_delete=action.auto_delete,
             internal=action.internal,
             arguments=action.props,
-            callback=self._on_exchange_declare,
+            callback=lambda *_: self._on_exchange_declare(action),
         )
 
-    def _on_exchange_declare(self, _):
+    def _on_exchange_declare(self, action: DeclareExchange):
+        self.log.info('exchange {} declared'.format(action.name))
         self._next_action()
 
     def _bind_queue(self, action: BindQueue):
+        self.log.info('binding queue {} to exchange {}'.format(
+            action.queue,
+            action.exchange,
+        ))
         channel = self._get_channel(action.channel)
         channel.queue_bind(
             queue=action.queue,
             exchange=action.exchange,
             routing_key=action.routing_key,
             arguments=action.props,
-            callback=self._on_bind_queue,
+            callback=lambda *_: self._on_bind_queue(action),
         )
 
-    def _on_bind_queue(self, _):
+    def _on_bind_queue(self, action: BindQueue):
+        self.log.info('bound queue {} to exchange {}'.format(
+            action.queue,
+            action.exchange,
+        ))
         self._next_action()
 
     def _bind_exchange(self, action: BindExchange):
+        self.log.info('binding exchange {} to exchange {}'.format(
+            action.src_exchange,
+            action.dst_exchange,
+        ))
         channel = self._get_channel(action.channel)
         channel.exchange_bind(
             source=action.src_exchange,
             destination=action.dst_exchange,
             routing_key=action.routing_key,
             props=action.props,
-            callback=self._on_bind_exchange,
+            callback=lambda *_: self._on_bind_exchange(action),
         )
 
-    def _on_bind_exchange(self, _):
+    def _on_bind_exchange(self, action: BindExchange):
+        self.log.info('bound exchange {} to exchange {}'.format(
+            action.src_exchange,
+            action.dst_exchange,
+        ))
         self._next_action()
 
     def _bind_consumer(self, action: BindConsumer):
+        self.log.info('binding consumer to queue {}'.format(
+            action.queue,
+        ))
         channel = self._get_channel(action.channel)
-        self._pika_consumers[channel].add(action.tag)
-        callback = action.callback
-        auto_ack = action.auto_ack
-        nack_requeue = action.nack_requeue
+        self._pika_consumers[action.channel].add(action.tag)
 
         def consumer_callback(channel, deliver, props, payload):
             delivery_tag = deliver.delivery_tag
             msg = AmqpMsg(
                 payload=payload,
                 content_type=props.content_type,
-                encoding=props.encoding,
+                encoding=props.content_encoding,
                 exchange=deliver.exchange,
                 topic=deliver.routing_key,
                 correlation_id=props.correlation_id,
@@ -302,30 +367,60 @@ class GeventAmqpConnection(AmqpConnection):
                 expiration=props.expiration,
                 headers=props.headers,
             )
-
-            result = False
-            try:
-                result = callback(msg)
-            except Exception as e:
-                result = False
-                if self._consumer_error_handler:
-                    self._consumer_error_handler(e)
-                else:
-                    traceback.print_exc()
-
-            if not auto_ack and result:
-                channel.basic_ack(delivery_tag)
-            elif not auto_ack:
-                channel.basic_nack(
-                    delivery_tag,
-                    requeue=nack_requeue,
-                )
+            spawn(self._handle_msg, action, channel, delivery_tag, msg)
 
         channel.basic_consume(
             queue=action.queue,
-            no_ack=not action.auto_ack,
+            no_ack=action.auto_ack,
             exclusive=action.exclusive,
             consumer_tag=action.tag,
             arguments=action.props,
             consumer_callback=consumer_callback,
         )
+        self._next_action()
+
+    def _handle_msg(
+            self,
+            action: BindConsumer,
+            channel,
+            delivery_tag,
+            msg,
+    ):
+        self.log.info(
+            'received msg {} in queue {} '
+            'from exchange {} topic {}'.format(
+                delivery_tag,
+                action.queue,
+                msg.exchange,
+                msg.topic,
+            )
+        )
+        self.log.debug('msg received: {}'.format(str(msg)))
+
+        result = True
+        try:
+            result = action.callback(msg)
+            self.log.debug('msg processed')
+        except Exception as e:
+            self.log.error('an error occurred when processing message')
+            result = False
+            if self._consumer_error_handler:
+                self._consumer_error_handler(e)
+            else:
+                traceback.print_exc()
+
+        if not action.auto_ack and result:
+            self.log.debug(
+                'sending ack for message {}'
+                .format(delivery_tag)
+            )
+            channel.basic_ack(delivery_tag)
+        elif not action.auto_ack:
+            self.log.debug(
+                'sending nack for message {}'
+                .format(delivery_tag)
+            )
+            channel.basic_nack(
+                delivery_tag,
+                requeue=action.nack_requeue,
+            )
