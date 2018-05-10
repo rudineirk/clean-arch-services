@@ -3,8 +3,8 @@ monkey.patch_all()  # isort:skip
 
 import timeit  # noqa: E402
 
-from ge_amqp import AmqpParameters  # noqa: E402
-from ge_amqp_rpc import AmqpRpc, Service  # noqa: E402
+from simple_amqp import AmqpParameters  # noqa: E402
+from simple_amqp_rpc import AmqpRpc, Service  # noqa: E402
 
 rpc_conn = AmqpRpc(
     AmqpParameters(),

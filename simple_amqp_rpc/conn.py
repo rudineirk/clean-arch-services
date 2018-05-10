@@ -2,8 +2,8 @@ from uuid import uuid4
 
 from gevent.event import AsyncResult
 
-from ge_amqp import AmqpMsg, AmqpParameters
-from ge_amqp.gevent import GeventAmqpConnection
+from simple_amqp import AmqpMsg, AmqpParameters
+from simple_amqp.gevent import GeventAmqpConnection
 
 from .data import RPC_CALL_TIMEOUT, RpcCall, RpcCallback, RpcResp
 from .encoding import (

@@ -1,6 +1,6 @@
 import msgpack
 
-from ge_amqp import AmqpMsg
+from simple_amqp import AmqpMsg
 
 from .data import RpcCall, RpcResp
 

@@ -1,7 +1,7 @@
 import traceback
 from typing import Callable, Tuple
 
-from ge_amqp import AmqpParameters
+from simple_amqp import AmqpParameters
 
 from .client import RpcClient
 from .conn import AmqpRpcConn
