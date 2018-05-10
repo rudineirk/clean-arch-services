@@ -184,7 +184,9 @@ class AsyncioAmqpConnection(AmqpConnection):
             login=action.username,
             password=action.password,
         )
-        self._conn.add_close_callback(self._on_connection_close)
+        self._conn.add_close_callback(
+            lambda *args: ensure_future(self._on_connection_close(*args))
+        )
 
     async def _stop_consuming(self):
         for channel_number, consumer_tags in self._consumers.items():
