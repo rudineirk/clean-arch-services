@@ -20,6 +20,7 @@ from .base import AmqpChannel, AmqpConnection, AmqpConsumer
 from .data import AmqpMsg, AmqpParameters
 
 NEXT_ACTION = 1
+BREAK_ACTION = 0
 LOG_LEVEL = environ.get('LOG_LEVEL', 'error')
 log = logging.getLogger('simple_amqp.gevent.conn')
 log_handler = logging.StreamHandler()
@@ -30,14 +31,34 @@ log.addHandler(log_handler)
 log.setLevel(getattr(logging, LOG_LEVEL.upper()))
 
 
+class PikaConnection(pika.SelectConnection):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._on_disconnect_handlers = []
+
+    def add_on_disconnect_error_callback(self, callback):
+        self._on_disconnect_handlers.append(callback)
+
+    def _adapter_disconnect(self):
+        error = None
+        try:
+            super()._adapter_disconnect()
+        except Exception as e:
+            error = e
+
+        if error:
+            for handler in self._on_disconnect_handlers:
+                spawn(handler, error)
+
+            raise error
+
+
 class GeventAmqpConnection(AmqpConnection):
     def __init__(self, params: AmqpParameters):
         super().__init__(params)
         self._pika_conn = None
         self._pika_channels = {}
         self._pika_consumers = {}
-
-        self._open_conn_action = None
 
         self._closing = False
         self._closing_fut = None
@@ -62,8 +83,6 @@ class GeventAmqpConnection(AmqpConnection):
     def start(self, auto_reconnect=True, wait=True):
         self._closing = False
         self._auto_reconnect = auto_reconnect
-        self._open_conn_action = self.actions[0]
-        self.actions = self.actions[1:]
         if wait:
             self._action_processor()
         else:
@@ -74,6 +93,7 @@ class GeventAmqpConnection(AmqpConnection):
         self._closing_fut = AsyncResult()
 
         self._stop_consuming()
+        sleep(2)
         self._close_channels()
         self._closing_fut.get()
         self._closing_fut = None
@@ -110,7 +130,7 @@ class GeventAmqpConnection(AmqpConnection):
         while True:
             ok = True
             try:
-                self._run_actions()
+                ok = self._run_actions()
             except Exception as e:
                 self.log.error('an error ocurred when processing actions')
                 self._processor_fut = None
@@ -132,11 +152,7 @@ class GeventAmqpConnection(AmqpConnection):
             self.log.info('retrying to process actions')
 
     def _run_actions(self):
-        actions = [*self.actions]
-        if not self._pika_conn:
-            actions.insert(0, self._open_conn_action)
-
-        for action in actions:
+        for action in self.actions:
             self.log.debug('action: {}'.format(str(action)))
             self._processor_fut = AsyncResult()
             if action.TYPE == CreateConnection.TYPE:
@@ -156,10 +172,12 @@ class GeventAmqpConnection(AmqpConnection):
 
             res = self._processor_fut.get()
             if res != NEXT_ACTION:
-                break
+                return False
 
-    def _next_action(self):
-        self._processor_fut.set(NEXT_ACTION)
+        return True
+
+    def _next_action(self, status=NEXT_ACTION):
+        self._processor_fut.set(status)
 
     def _action_error(self, exc):
         self._processor_fut.set_exception(exc)
@@ -181,7 +199,7 @@ class GeventAmqpConnection(AmqpConnection):
 
     def _connect(self, action: CreateConnection):
         self.log.info('starting connection')
-        self._pika_conn = pika.SelectConnection(
+        self._pika_conn = PikaConnection(
             pika.ConnectionParameters(
                 host=action.host,
                 port=action.port,
@@ -196,6 +214,7 @@ class GeventAmqpConnection(AmqpConnection):
             self._on_connection_close,
             stop_ioloop_on_close=False,
         )
+        self._pika_conn.add_on_disconnect_error_callback(self._on_disconnect)
         spawn(self._pika_conn.ioloop.start)
 
     def _stop_consuming(self):
@@ -220,17 +239,21 @@ class GeventAmqpConnection(AmqpConnection):
             channel.close()
 
     def _close_connection(self):
-        pass
+        self._pika_conn.close()
 
-    def _on_connection_open(self, conn):
+    def _on_connection_open(self, *_):
         self.log.info('connection opened')
         self._next_action()
 
-    def _on_connection_error(self, conn, err):
+    def _on_connection_error(self, *_):
         self.log.info('connection error')
-        self._action_error(err)
+        self._next_action(BREAK_ACTION)
 
-    def _on_connection_close(self, conn, *_):
+    def _on_disconnect(self, error):
+        self.log.info('connection error')
+        self._next_action(BREAK_ACTION)
+
+    def _on_connection_close(self, *_):
         self.log.info('connection closed')
         if self._processor_fut:
             self._processor_fut.set_exception(
@@ -244,6 +267,7 @@ class GeventAmqpConnection(AmqpConnection):
             self._consumer_cancel_fut = None
 
         self._clear_channels()
+        self._pika_conn = None
         if not self._closing and self._auto_reconnect:
             sleep(self.reconnect_delay)
             spawn(self._action_processor)
@@ -269,8 +293,11 @@ class GeventAmqpConnection(AmqpConnection):
                 self.log.info('channel {} closed'.format(key))
                 self._remove_channel(key)
 
-        if not self._pika_channels and self._auto_reconnect:
+        if not self._pika_channels and not self._closing and self._auto_reconnect:
             spawn(self._action_processor)
+
+        if not self._pika_channels and self._closing:
+            self._close_connection()
 
     def _declare_queue(self, action: DeclareQueue):
         self.log.info('declaring queue {}'.format(action.name))
