@@ -12,6 +12,18 @@ class BaseRpc(metaclass=ABCMeta):
         self.services = {}
         self._recv_error_handlers = set()
 
+    def method(self, service, name=None):
+        if service not in self.services:
+            self.services[service] = {}
+
+        def decorator(func, name=name):
+            if name is None:
+                name = func.__name__
+
+            self.services[service][name] = func
+
+        return decorator
+
     def add_svc(self, service) -> 'BaseRpc':
         self.services[service.svc.name] = \
             service.svc.get_methods(service)
