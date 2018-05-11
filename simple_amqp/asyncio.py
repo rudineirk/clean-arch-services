@@ -255,7 +255,7 @@ class AsyncioAmqpConnection(AmqpConnection):
     async def _create_channel(self, action: CreateChannel):
         self.log.info('creating channel {}'.format(action.number))
         channel = await self._conn.channel(action.number)
-        self.log.info('channel {} opened'.format(action.number))
+        self.log.debug('channel {} opened'.format(action.number))
         self._set_channel(action.number, channel)
 
     async def _declare_queue(self, action: DeclareQueue):
@@ -272,7 +272,7 @@ class AsyncioAmqpConnection(AmqpConnection):
                 auto_delete=action.auto_delete,
                 arguments=action.props,
         )
-        self.log.info('queue {} declared'.format(action.name))
+        self.log.debug('queue {} declared'.format(action.name))
 
     async def _declare_exchange(self, action: DeclareExchange):
         self.log.info('declaring exchange {}'.format(action.name))
@@ -291,7 +291,7 @@ class AsyncioAmqpConnection(AmqpConnection):
                 internal=action.internal,
                 arguments=action.props,
         )
-        self.log.info('exchange {} declared'.format(action.name))
+        self.log.debug('exchange {} declared'.format(action.name))
 
     async def _bind_queue(self, action: BindQueue):
         self.log.info('binding queue {} to exchange {}'.format(
@@ -306,7 +306,7 @@ class AsyncioAmqpConnection(AmqpConnection):
             routing_key=action.routing_key,
             arguments=action.props,
         )
-        self.log.info('bound queue {} to exchange {}'.format(
+        self.log.debug('bound queue {} to exchange {}'.format(
             action.queue,
             action.exchange,
         ))
@@ -324,7 +324,7 @@ class AsyncioAmqpConnection(AmqpConnection):
             routing_key=action.routing_key,
             props=action.props,
         )
-        self.log.info('bound exchange {} to exchange {}'.format(
+        self.log.debug('bound exchange {} to exchange {}'.format(
             action.src_exchange,
             action.dst_exchange,
         ))

@@ -275,7 +275,7 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _on_channel_open(self, channel, number):
-        self.log.info('channel {} opened'.format(number))
+        self.log.debug('channel {} opened'.format(number))
         self._set_channel(number, channel)
         channel.add_on_close_callback(self._on_channel_closed)
         self._next_action()
@@ -305,7 +305,7 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _on_queue_declare(self, action: DeclareQueue):
-        self.log.info('queue {} declared'.format(action.name))
+        self.log.debug('queue {} declared'.format(action.name))
         self._next_action()
 
     def _declare_exchange(self, action: DeclareExchange):
@@ -322,7 +322,7 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _on_exchange_declare(self, action: DeclareExchange):
-        self.log.info('exchange {} declared'.format(action.name))
+        self.log.debug('exchange {} declared'.format(action.name))
         self._next_action()
 
     def _bind_queue(self, action: BindQueue):
@@ -340,7 +340,7 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _on_bind_queue(self, action: BindQueue):
-        self.log.info('bound queue {} to exchange {}'.format(
+        self.log.debug('bound queue {} to exchange {}'.format(
             action.queue,
             action.exchange,
         ))
@@ -361,7 +361,7 @@ class GeventAmqpConnection(AmqpConnection):
         )
 
     def _on_bind_exchange(self, action: BindExchange):
-        self.log.info('bound exchange {} to exchange {}'.format(
+        self.log.debug('bound exchange {} to exchange {}'.format(
             action.src_exchange,
             action.dst_exchange,
         ))
