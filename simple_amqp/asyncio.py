@@ -54,15 +54,6 @@ class AsyncioAmqpConnection(AmqpConnection):
         self._consumer_error_handler = None
         self.log = log
 
-    def add_conn_error_handler(self, handler):
-        self._conn_error_handler = handler
-
-    def add_consumer_error_handler(self, handler):
-        self._consumer_error_handler = handler
-
-    def configure(self):
-        pass
-
     async def start(self, auto_reconnect=True, wait=True):
         self._closing = False
         self._auto_reconnect = auto_reconnect
@@ -126,8 +117,9 @@ class AsyncioAmqpConnection(AmqpConnection):
             except Exception as e:
                 self.log.error('an error ocurred when processing actions')
                 ok = False
-                if self._conn_error_handler:
-                    self._conn_error_handler(e)
+                if self._conn_error_handlers:
+                    for handler in self._conn_error_handlers:
+                        handler(e)
                 else:
                     traceback.print_exc()
 
@@ -349,8 +341,9 @@ class AsyncioAmqpConnection(AmqpConnection):
         except Exception as e:
             self.log.error('an error occurred when processing message')
             result = False
-            if self._consumer_error_handler:
-                self._consumer_error_handler(e)
+            if self._consumer_error_handlers:
+                for handler in self._consumer_error_handlers:
+                    handler(e)
             else:
                 traceback.print_exc()
 

@@ -49,7 +49,6 @@ class BaseAmqpRpc(BaseRpc, metaclass=ABCMeta):
         self._create_publish()
         self._create_listen()
         self._create_resp()
-        self.conn.configure()
 
     def start(self, auto_reconnect: bool=True):
         raise NotImplementedError

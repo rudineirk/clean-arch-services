@@ -33,9 +33,14 @@ class AmqpConnection(metaclass=ABCMeta):
         ))
 
         self._channel_number = 1
+        self._conn_error_handlers = set()
+        self._consumer_error_handlers = set()
 
-    def configure(self):
-        raise NotImplementedError
+    def add_conn_error_handler(self, handler):
+        self._conn_error_handlers.add(handler)
+
+    def add_consumer_error_handler(self, handler):
+        self._consumer_error_handlers.add(handler)
 
     def start(self, auto_reconnect: bool=True):
         raise NotImplementedError
