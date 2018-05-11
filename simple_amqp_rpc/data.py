@@ -1,15 +1,8 @@
-from http import HTTPStatus
 from typing import Any, Callable, List
 
 from utils.struct import Struct
 
-OK = HTTPStatus.OK
-SERVICE_NOT_FOUND = HTTPStatus.NOT_FOUND
-METHOD_NOT_FOUND = HTTPStatus.METHOD_NOT_ALLOWED
-CALL_ERROR = HTTPStatus.INTERNAL_SERVER_ERROR
-CALL_ARGS_MISMATCH = HTTPStatus.BAD_REQUEST
-
-RPC_CALL_TIMEOUT = 60
+from .consts import OK
 
 
 class RpcCall(metaclass=Struct):
