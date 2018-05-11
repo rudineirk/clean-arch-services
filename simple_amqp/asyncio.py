@@ -57,6 +57,7 @@ class AsyncioAmqpConnection(AmqpConnection):
         self.log = log
 
     async def start(self, auto_reconnect=True, wait=True):
+        super().start()
         self._closing = False
         self._auto_reconnect = auto_reconnect
         if wait:

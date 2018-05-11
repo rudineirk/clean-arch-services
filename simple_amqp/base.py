@@ -42,8 +42,8 @@ class AmqpConnection(metaclass=ABCMeta):
     def add_consumer_error_handler(self, handler):
         self._consumer_error_handlers.add(handler)
 
-    def start(self, auto_reconnect: bool=True):
-        raise NotImplementedError
+    def start(self):
+        self._sort_actions()
 
     def stop(self):
         raise NotImplementedError
@@ -69,6 +69,41 @@ class AmqpConnection(metaclass=ABCMeta):
 
     def publish(self, channel: 'AmqpChannel', msg: AmqpMsg):
         raise NotImplementedError
+
+    def _sort_actions(self):
+        connections = []
+        channels = []
+        exchange_declarations = []
+        queue_declarations = []
+        exchange_bindings = []
+        queue_bindings = []
+        consumer_bindings = []
+
+        for action in self.actions:
+            if action.TYPE == CreateConnection.TYPE:
+                connections.append(action)
+            elif action.TYPE == CreateChannel.TYPE:
+                channels.append(action)
+            elif action.TYPE == DeclareExchange.TYPE:
+                exchange_declarations.append(action)
+            elif action.TYPE == DeclareQueue.TYPE:
+                queue_declarations.append(action)
+            elif action.TYPE == BindExchange.TYPE:
+                exchange_bindings.append(action)
+            elif action.TYPE == BindQueue.TYPE:
+                exchange_bindings.append(action)
+            elif action.TYPE == BindConsumer.TYPE:
+                consumer_bindings.append(action)
+
+        self.actions = [
+            *connections,
+            *channels,
+            *exchange_declarations,
+            *queue_declarations,
+            *exchange_bindings,
+            *queue_bindings,
+            *consumer_bindings,
+        ]
 
 
 class AmqpChannel:

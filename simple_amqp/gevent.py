@@ -72,6 +72,7 @@ class GeventAmqpConnection(AmqpConnection):
         self.log = log
 
     def start(self, auto_reconnect=True, wait=True):
+        super().start()
         self._closing = False
         self._auto_reconnect = auto_reconnect
         if wait:
