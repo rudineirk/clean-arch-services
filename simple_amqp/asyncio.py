@@ -1,12 +1,14 @@
 import logging
 import traceback
-from asyncio import ensure_future, sleep
+from asyncio import ensure_future, get_event_loop, sleep
 from os import environ
 
 from aio_pika import ExchangeType as PikaExchangeType
 from aio_pika import IncomingMessage as PikaIncomingMessage
 from aio_pika import Message as PikaMessage
 from aio_pika import connect as pika_connect
+from aio_pika.exchange import Exchange
+from aio_pika.queue import Queue
 
 from .actions import (
     BindConsumer,
@@ -167,6 +169,47 @@ class AsyncioAmqpConnection(AmqpConnection):
         self._channels = {}
         self._consumers = {}
 
+    def _get_queue(self, channel_num, queue_name):
+        channel = self._get_channel(channel_num)
+        if channel_num not in self._queues:
+            self._queues[channel_num] = {}
+        if queue_name not in self._queues[channel_num]:
+            loop = get_event_loop()
+            self._queues[channel_num][queue_name] = Queue(
+                loop=loop,
+                channel=channel._channel,
+                future_store=channel._futures.get_child(),
+                name=queue_name,
+                durable=False,
+                exclusive=False,
+                auto_delete=False,
+                arguments={},
+            )
+
+        return self._queues[channel_num][queue_name]
+
+    def _get_exchange(self, channel_num, exchange_name):
+        channel = self._get_channel(channel_num)
+        if channel_num not in self._exchanges:
+            self._exchanges[channel_num] = {}
+        if exchange_name not in self._exchanges[channel_num]:
+            loop = get_event_loop()
+            self._exchanges[channel_num][exchange_name] = Exchange(
+                loop=loop,
+                channel=channel._channel,
+                publish_method=channel._publish,
+                future_store=channel._futures.get_child(),
+                name=exchange_name,
+                type=EXCHANGE_TYPES_MAP['topic'],
+                durable=False,
+                internal=False,
+                auto_delete=False,
+                passive=False,
+                arguments={},
+            )
+
+        return self._exchanges[channel_num][exchange_name]
+
     async def _connect(self, action: CreateConnection):
         self.log.info('starting connection')
         self._conn = await pika_connect(
@@ -254,8 +297,8 @@ class AsyncioAmqpConnection(AmqpConnection):
             action.queue,
             action.exchange,
         ))
-        queue = self._queues[action.channel][action.queue]
-        exchange = self._exchanges[action.channel][action.exchange]
+        queue = self._get_queue(action.channel, action.queue)
+        exchange = self._get_exchange(action.channel, action.exchange)
 
         await queue.bind(
             exchange=exchange,
@@ -272,8 +315,9 @@ class AsyncioAmqpConnection(AmqpConnection):
             action.src_exchange,
             action.dst_exchange,
         ))
-        src_exchange = self._exchanges[action.channel][action.src_exchange]
-        dst_exchange = self._exchanges[action.channel][action.dst_exchange]
+        src_exchange = self._get_exchange(action.channel, action.src_exchange)
+        dst_exchange = self._get_exchange(action.channel, action.dst_exchange)
+
         await dst_exchange.bind(
             src_exchange,
             routing_key=action.routing_key,
@@ -288,7 +332,7 @@ class AsyncioAmqpConnection(AmqpConnection):
         self.log.info('binding consumer to queue {}'.format(
             action.queue,
         ))
-        queue = self._queues[action.channel][action.queue]
+        queue = self._get_queue(action.channel, action.queue)
         self._consumers[action.channel].add(action.tag)
 
         def consumer(pika_msg: PikaIncomingMessage):
