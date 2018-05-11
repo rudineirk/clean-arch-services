@@ -102,12 +102,18 @@ class GeventAmqpConnection(AmqpConnection):
         self.log.debug('publishing message: {}'.format(str(msg)))
         real_channel = self._get_channel(channel.number)
 
+        expiration = msg.expiration
+        if expiration is not None and expiration < 0:
+            expiration = None
+        if expiration is not None:
+            expiration = str(expiration)
+
         properties = pika.BasicProperties(
             content_type=msg.content_type,
             content_encoding=msg.encoding,
             correlation_id=msg.correlation_id,
             reply_to=msg.reply_to,
-            expiration=msg.expiration,
+            expiration=expiration,
             headers=msg.headers,
         )
         real_channel.basic_publish(

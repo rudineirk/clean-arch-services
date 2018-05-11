@@ -96,6 +96,8 @@ class AsyncioAmqpConnection(AmqpConnection):
         expiration = msg.expiration
         if expiration is not None and expiration < 0:
             expiration = None
+        if expiration is not None:
+            expiration = str(expiration)
 
         pika_msg = PikaMessage(
             body=msg.payload,

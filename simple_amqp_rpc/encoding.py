@@ -2,6 +2,7 @@ import msgpack
 
 from simple_amqp import AmqpMsg
 
+from .consts import RPC_MESSAGE_TTL
 from .data import RpcCall, RpcResp
 
 CONTENT_TYPE_MSGPACK = 'application/msgpack'
@@ -16,6 +17,7 @@ def encode_rpc_call(call: RpcCall) -> AmqpMsg:
     return AmqpMsg(
         payload=payload,
         content_type=CONTENT_TYPE_MSGPACK,
+        expiration=RPC_MESSAGE_TTL,
     )
 
 
