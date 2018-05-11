@@ -24,7 +24,6 @@ class LogService:
 
     @sub.listen('logs')
     async def logs(self, log_line: str):
-        raise ValueError('here')
         print('## log line: ', log_line)
         time = timeit.default_timer()
         print('## dt {0:.2f}ms'.format((time - self._last_dt) * 1000))
