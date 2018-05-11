@@ -1,12 +1,18 @@
 from typing import Callable, Dict
 
-from utils.struct import Struct, field
+from dataclasses import dataclass, field, replace
 
 CONTENT_TYPE_TEXT_PLAIN = 'text/plain'
 ENCODING_UTF8 = 'utf8'
 
 
-class AmqpParameters(metaclass=Struct):
+class Data:
+    def replace(self, **kwargs):
+        return replace(self, **kwargs)
+
+
+@dataclass(frozen=True)
+class AmqpParameters(Data):
     host: str = 'localhost'
     port: int = 5672
     username: str = 'guest'
@@ -14,7 +20,8 @@ class AmqpParameters(metaclass=Struct):
     vhost: str = '/'
 
 
-class AmqpMsg(metaclass=Struct):
+@dataclass(frozen=True)
+class AmqpMsg(Data):
     payload: bytes
     exchange: str = ''
     topic: str = ''

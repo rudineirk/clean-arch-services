@@ -1,18 +1,25 @@
 from typing import Any, List
 
-from utils.struct import Struct
+from dataclasses import dataclass, replace
 
 from .consts import OK
 
 
-class RpcCall(metaclass=Struct):
+class Data:
+    def replace(self, **kwargs):
+        return replace(self, **kwargs)
+
+
+@dataclass(frozen=True)
+class RpcCall(Data):
     route: str
     service: str
     method: str
     args: List[Any]
 
 
-class RpcResp(metaclass=Struct):
+@dataclass(frozen=True)
+class RpcResp(Data):
     status: int
     body: Any = None
 

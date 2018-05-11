@@ -1,10 +1,14 @@
 from typing import Any
 
-from utils.struct import Struct
+from dataclasses import dataclass, replace
 
 
-class Event(metaclass=Struct):
+@dataclass(frozen=True)
+class Event:
     service: str
     topic: str
     payload: Any
     retry_count: int = 0
+
+    def replace(self, **kwargs):
+        return replace(self, **kwargs)

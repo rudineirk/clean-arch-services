@@ -1,9 +1,15 @@
 from typing import Callable, Dict
 
-from utils.struct import Struct, field
+from dataclasses import dataclass, field, replace
 
 
-class CreateConnection(metaclass=Struct):
+class Action:
+    def replace(self, **kwargs):
+        return replace(self, **kwargs)
+
+
+@dataclass(frozen=True)
+class CreateConnection(Action):
     host: str = 'localhost'
     port: int = 5672
     username: str = 'guest'
@@ -12,12 +18,14 @@ class CreateConnection(metaclass=Struct):
     TYPE: str = 'conn.create'
 
 
-class CreateChannel(metaclass=Struct):
+@dataclass(frozen=True)
+class CreateChannel(Action):
     number: int = -1
     TYPE: str = 'chann.create'
 
 
-class DeclareQueue(metaclass=Struct):
+@dataclass(frozen=True)
+class DeclareQueue(Action):
     channel: int = -1
     name: str = ''
     durable: bool = False
@@ -27,7 +35,8 @@ class DeclareQueue(metaclass=Struct):
     TYPE: str = 'queue.declare'
 
 
-class DeclareExchange(metaclass=Struct):
+@dataclass(frozen=True)
+class DeclareExchange(Action):
     channel: int = -1
     name: str = ''
     type: str = ''
@@ -38,7 +47,8 @@ class DeclareExchange(metaclass=Struct):
     TYPE: str = 'exchange.declare'
 
 
-class BindQueue(metaclass=Struct):
+@dataclass(frozen=True)
+class BindQueue(Action):
     channel: int = -1
     queue: str = ''
     exchange: str = ''
@@ -47,7 +57,8 @@ class BindQueue(metaclass=Struct):
     TYPE: str = 'queue.bind'
 
 
-class BindExchange(metaclass=Struct):
+@dataclass(frozen=True)
+class BindExchange(Action):
     channel: int = -1
     src_exchange: str = ''
     dst_exchange: str = ''
@@ -56,7 +67,8 @@ class BindExchange(metaclass=Struct):
     TYPE: str = 'exchange.bind'
 
 
-class BindConsumer(metaclass=Struct):
+@dataclass(frozen=True)
+class BindConsumer(Action):
     channel: int = -1
     queue: str = ''
     tag: str = ''
