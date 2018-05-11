@@ -27,8 +27,8 @@ class AsyncioAmqpRpc(BaseAmqpRpc):
         )
         self._response_futures = {}
 
-    async def start(self, auto_reconnect=True):
-        await self.conn.start(auto_reconnect)
+    async def start(self, auto_reconnect: bool=True, wait: bool=True):
+        await self.conn.start(auto_reconnect, wait)
 
     async def stop(self):
         await self.conn.stop()

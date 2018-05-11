@@ -28,8 +28,8 @@ class GeventAmqpRpc(BaseAmqpRpc):
         )
         self._response_futures = {}
 
-    def start(self, auto_reconnect=True):
-        self.conn.start(auto_reconnect)
+    def start(self, auto_reconnect: bool=True, wait: bool=True):
+        self.conn.start(auto_reconnect, wait)
 
     def stop(self):
         self.conn.stop()
