@@ -12,6 +12,7 @@ from simple_amqp_pubsub.gevent import GeventAmqpPubSub  # noqa: E402
 pubsub_conn = GeventAmqpPubSub(
     AmqpParameters(),
     'logs.worker',
+    retries=['5s', '10s', '30s'],
 )
 
 

@@ -23,12 +23,25 @@ class AsyncioAmqpPubSub(BaseAmqpPubSub):
 
         try:
             await handler(event.payload)
+            return
         except Exception as e:
             if not self._recv_error_handlers:
                 traceback.print_exc()
             else:
                 for handler in self._recv_error_handlers:
                     handler(e)
+
+        if not self._enable_retries:
+            return 'error processing message'
+
+        await self._retry_event(event)
+
+    async def _retry_event(self, event: Event):
+        msg = super()._retry_event(event)
+        if not msg:
+            return
+
+        await self._send_event_msg(msg)
 
     async def _send_event_msg(self, msg: AmqpMsg):
         await self._publish_channel.publish(msg)

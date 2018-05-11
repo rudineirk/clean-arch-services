@@ -11,6 +11,7 @@ from simple_amqp_pubsub.gevent import GeventAmqpPubSub  # noqa: E402
 pubsub_conn = GeventAmqpPubSub(
     AmqpParameters(),
     'logs.master',
+    enable_retries=False,
 )
 
 logs_client = pubsub_conn.client('logs.worker')

@@ -23,12 +23,25 @@ class GeventAmqpPubSub(BaseAmqpPubSub):
 
         try:
             method(event.payload)
+            return
         except Exception as e:
             if not self._recv_error_handlers:
                 traceback.print_exc()
             else:
                 for handler in self._recv_error_handlers:
                     handler(e)
+
+        if not self._enable_retries:
+            return 'error processing message'
+
+        self._retry_event(event)
+
+    def _retry_event(self, event: Event):
+        msg = super()._retry_event(event)
+        if not msg:
+            return
+
+        self._send_event_msg(msg)
 
     def _send_event_msg(self, msg: AmqpMsg):
         self._publish_channel.publish(msg)

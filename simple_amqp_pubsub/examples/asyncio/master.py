@@ -12,6 +12,7 @@ set_event_loop_policy(uvloop.EventLoopPolicy())
 pubsub_conn = AsyncioAmqpPubSub(
     AmqpParameters(),
     'logs.master',
+    enable_retries=False,
 )
 
 logs_client = pubsub_conn.client('logs.worker')
