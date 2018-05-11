@@ -10,7 +10,7 @@ CONTENT_TYPE_MSGPACK = 'application/msgpack'
 def encode_event(event: Event) -> AmqpMsg:
     payload = msgpack.packb({
         'service': event.service,
-        'event': event.event,
+        'topic': event.topic,
         'payload': event.payload,
     })
     return AmqpMsg(
@@ -23,6 +23,6 @@ def decode_event(msg: AmqpMsg) -> Event:
     payload = msgpack.unpackb(msg.payload, encoding='utf8')
     return Event(
         service=payload['service'],
-        event=payload['event'],
+        topic=payload['topic'],
         payload=payload['payload'],
     )

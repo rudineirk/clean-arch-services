@@ -10,10 +10,10 @@ class PubSubClient:
 
         self.events_cache = {}
 
-    def push(self, event: str, payload: Any):
-        return self.pubsub.push(Event(
+    def push(self, topic: str, payload: Any):
+        return self.pubsub.push_event(Event(
             service=self.service,
-            event=event,
+            topic=topic,
             payload=payload,
         ))
 
@@ -31,10 +31,10 @@ class PubSubClient:
         def publisher(payload):
             event = Event(
                 service=self.service,
-                event=name,
+                topic=name,
                 payload=payload,
             )
-            return self.pubsub.push(event)
+            return self.pubsub.push_event(event)
 
         self.events_cache[name] = publisher
         return publisher

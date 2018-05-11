@@ -32,7 +32,7 @@ class BaseAmqpPubSub(BasePubSub, metaclass=ABCMeta):
         self._create_publish()
         self._create_listen()
 
-    def start(self, auto_reconnect: bool=True):
+    def start(self, auto_reconnect: bool=True, wait: bool=True):
         raise NotImplementedError
 
     def stop(self):
@@ -46,7 +46,7 @@ class BaseAmqpPubSub(BasePubSub, metaclass=ABCMeta):
         msg = self._encode_event(event)
         msg = msg.replace(
             exchange=PUBSUB_EXCHANGE.format(service=event.service),
-            topic=event.event,
+            topic=event.topic,
         )
         return self._send_event_msg(msg)
 

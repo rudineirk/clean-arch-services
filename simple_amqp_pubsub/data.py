@@ -5,5 +5,5 @@ from utils.struct import Struct
 
 class Event(metaclass=Struct):
     service: str
-    event: str
+    topic: str
     payload: Any

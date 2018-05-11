@@ -27,7 +27,7 @@ class BasePubSub(metaclass=ABCMeta):
         return decorator
 
     def add_subscriber(self, subscriber) -> 'BasePubSub':
-        service = subscriber.sub.name
+        service = subscriber.sub.service
         event_handlers = subscriber.sub.get_event_handlers(subscriber)
 
         if service not in self._listen_services:
