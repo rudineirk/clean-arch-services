@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from utils.struct import Struct
 
