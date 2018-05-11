@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "821b383829731f22ed5ccc46cc2ae4c5af59618717e952eb80a8e48946395295"
+            "sha256": "d315f4951797ad1af9cb4710156c645c2d144c63c6e889b1e8992194a96c0b61"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -234,6 +234,19 @@
             ],
             "index": "pypi",
             "version": "==0.0.6"
+        },
+        "uvloop": {
+            "hashes": [
+                "sha256:01cf7199728867f406ba5af78cc47c80acd663ccc52cae105e737a997f1b2bca",
+                "sha256:68574150720a380509a3409bf2941be0199cfdacff144a97502fb29c250ba927",
+                "sha256:7ee14835a75c72227d3f8a3f370519a3106a6f02e5453f275f16437ebdb92953",
+                "sha256:7fba5f390db607b2f026bc598df6b2a2a9e062bffe82910b5ffe2b88560135e5",
+                "sha256:89c3bfaad77625490c42a6b99af1879234767ab0c31dd193486a909506e5e549",
+                "sha256:b057ef2b0d0162c1ef257f43a95f59bfec37ee9a75cc5412d6b7f9ac6d1d69cb",
+                "sha256:e7c871ba3edd5fcf2afb756de88a9a65245070161e24f75abe79c0a241bb8c76"
+            ],
+            "index": "pypi",
+            "version": "==0.9.1"
         },
         "yarl": {
             "hashes": [

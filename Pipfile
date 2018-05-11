@@ -13,6 +13,7 @@ pymongo = "*"
 ujson = "*"
 ulid-py = "*"
 aio-pika = "*"
+uvloop = "*"
 
 [dev-packages]
 yapf = "*"
