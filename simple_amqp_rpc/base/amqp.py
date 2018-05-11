@@ -95,7 +95,7 @@ class BaseAmqpRpc(BaseRpc, metaclass=ABCMeta):
     def _decode_call(self, msg: AmqpMsg) -> RpcCall:
         return decode_rpc_call(msg, self.route)
 
-    def _encode_call(self, call: RpcCall) -> RpcCall:
+    def _encode_call(self, call: RpcCall) -> AmqpMsg:
         return encode_rpc_call(call)
 
     def _decode_resp(self, msg: AmqpMsg) -> RpcResp:

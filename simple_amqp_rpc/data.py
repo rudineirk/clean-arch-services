@@ -1,4 +1,4 @@
-from typing import Any, Callable, List
+from typing import List
 
 from utils.struct import Struct
 
@@ -19,6 +19,3 @@ class RpcResp(metaclass=Struct):
     @property
     def ok(self):
         return self.status == OK
-
-
-RpcCallback = Callable[[RpcCall], RpcResp]

@@ -9,24 +9,31 @@ from .client import RpcClient
 
 class BaseRpc(metaclass=ABCMeta):
     def __init__(self):
-        self.services = {}
+        self._services = {}
         self._recv_error_handlers = set()
 
-    def method(self, service, name=None):
-        if service not in self.services:
-            self.services[service] = {}
+    def method(self, service: str, name: str=None):
+        if service not in self._services:
+            self._services[service] = {}
 
         def decorator(func, name=name):
             if name is None:
                 name = func.__name__
 
-            self.services[service][name] = func
+            self._services[service][name] = func
+            return func
 
         return decorator
 
     def add_svc(self, service) -> 'BaseRpc':
-        self.services[service.svc.name] = \
-            service.svc.get_methods(service)
+        service_name = service.svc.name
+        methods = service.svc.get_methods(service)
+
+        if service_name not in self._services:
+            self._services[service_name] = {}
+
+        for method, handler in methods.items():
+            self._services[service_name][method] = handler
 
         return self
 
@@ -40,34 +47,32 @@ class BaseRpc(metaclass=ABCMeta):
         raise NotImplementedError
 
     def add_recv_call_error_handler(self, handler):
-        self._recv_error_handler.add(handler)
+        self._recv_error_handlers.add(handler)
 
     def _get_method(
             self,
-            service_name: str,
-            method_name: str,
+            service: str,
+            method: str,
     ) -> Tuple[Callable, RpcResp]:
         try:
-            service = self.services[service_name]
+            methods = self._services[service]
         except KeyError:
-            msg = 'Service [{}] not found'.format(
-                service_name,
-            )
+            msg = 'Service [{}] not found'.format(service)
             return None, RpcResp(
                 status=SERVICE_NOT_FOUND,
                 body=msg,
             )
 
         try:
-            method = service[method_name]
+            handler = methods[method]
         except KeyError:
             msg = 'Method [{}->{}] not found'.format(
-                service_name,
-                method_name,
+                service,
+                method,
             )
             return None, RpcResp(
                 status=METHOD_NOT_FOUND,
                 body=msg,
             )
 
-        return method, None
+        return handler, None
