@@ -12,8 +12,9 @@ falcon = "*"
 pymongo = "*"
 ujson = "*"
 ulid-py = "*"
-aio-pika = "*"
-uvloop = "*"
+simple-amqp = {extras = ["gevent"]}
+simple-amqp-pubsub = "*"
+simple-amqp-rpc = "*"
 
 [dev-packages]
 yapf = "*"
